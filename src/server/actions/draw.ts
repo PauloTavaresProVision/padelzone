@@ -52,6 +52,47 @@ export async function generateQualifiers(formData: FormData) {
   revalidate();
 }
 
+// Sorteio manual de empate: troca a dupla apurada (inEntryId) pela dupla empatada
+// que ficou de fora (outEntryId), no quadro de apuramento. Só antes de jogar o quadro.
+export async function swapQualifier(formData: FormData) {
+  const userId = await getSessionUserId();
+  if (!userId) throw new Error("Sessão expirada.");
+  const categoryId = Number(formData.get("categoryId"));
+  await requireCategory(categoryId, userId);
+  const inEntryId = Number(formData.get("inEntryId"));
+  const outEntryId = Number(formData.get("outEntryId"));
+
+  const entries = await prisma.entry.findMany({
+    where: { id: { in: [inEntryId, outEntryId] } },
+    select: { id: true, teamId: true, playerId: true },
+  });
+  const inE = entries.find((e) => e.id === inEntryId);
+  const outE = entries.find((e) => e.id === outEntryId);
+  if (!inE || !outE) throw new Error("Duplas não encontradas.");
+
+  const ko = await prisma.stage.findFirst({
+    where: { categoryId, type: "KNOCKOUT" },
+    orderBy: { order: "desc" },
+    include: { matches: { include: { sides: { include: { players: true } } } } },
+  });
+  if (!ko) throw new Error("Ainda não há quadro de apuramento.");
+  if (ko.matches.some((m) => m.status === "DONE")) throw new Error("Já há jogos do quadro jogados; não dá para trocar agora.");
+
+  for (const m of ko.matches) {
+    for (const side of m.sides) {
+      const isTeam = inE.teamId != null && side.teamId === inE.teamId;
+      const isPlayer = inE.playerId != null && side.players.some((p) => p.playerId === inE.playerId);
+      if (!isTeam && !isPlayer) continue;
+      await prisma.matchSide.update({ where: { id: side.id }, data: { teamId: outE.teamId ?? null } });
+      await prisma.matchSidePlayer.deleteMany({ where: { matchSideId: side.id } });
+      if (outE.playerId) await prisma.matchSidePlayer.create({ data: { matchSideId: side.id, playerId: outE.playerId } });
+      revalidate();
+      return;
+    }
+  }
+  throw new Error("Dupla a substituir não está no quadro.");
+}
+
 export async function clearDraw(formData: FormData) {
   const userId = await getSessionUserId();
   if (!userId) throw new Error("Sessão expirada.");

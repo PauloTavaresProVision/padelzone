@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Shuffle, Trash2, Trophy, Radio, Users, Sparkles, Info } from "lucide-react";
+import { Shuffle, Trash2, Trophy, Radio, Users, Sparkles, Info, AlertTriangle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { getMyClub } from "@/server/clubs";
 import { getCompetition } from "@/server/competitions";
 import { getCategoryStages, sideName, entryName } from "@/server/draw";
-import { launchDraw, generateQualifiers, clearDraw } from "@/server/actions/draw";
+import { launchDraw, generateQualifiers, clearDraw, swapQualifier } from "@/server/actions/draw";
+import { findQualifierTies } from "@/server/draw-engine";
 import { BracketView } from "@/components/bracket-view";
 import { GroupsView } from "@/components/groups-view";
 import { TournamentHeader } from "@/components/tournament-header";
@@ -201,6 +202,20 @@ export default async function SorteioPage({
               for (const p of side.players) if (playerToEntry.has(p.playerId)) qualifiedIds.add(playerToEntry.get(p.playerId)!);
             }
         }
+        // Empate TOTAL na vaga de corte (duplas indistinguíveis) — precisa de sorteio manual.
+        let qualifierTie: { spots: number; ins: { id: number; name: string }[]; outs: { id: number; name: string }[] } | null = null;
+        if (groupStage && koFilled && qualifiedIds.size > 0) {
+          const rows = groupStage.standings.map((s) => ({ id: s.entry.id, rank: s.rank, won: s.won, played: s.played, gamesFor: s.gamesFor, gamesAgainst: s.gamesAgainst, setsFor: s.setsFor, setsAgainst: s.setsAgainst }));
+          const tie = findQualifierTies(rows, qualifiedIds.size);
+          if (tie) {
+            const nameById = new Map(groupStage.standings.map((s) => [s.entry.id, entryName(s.entry)]));
+            qualifierTie = {
+              spots: tie.spots,
+              ins: tie.ids.filter((id) => qualifiedIds.has(id)).map((id) => ({ id, name: nameById.get(id) ?? "?" })),
+              outs: tie.ids.filter((id) => !qualifiedIds.has(id)).map((id) => ({ id, name: nameById.get(id) ?? "?" })),
+            };
+          }
+        }
         const defaultQ = Math.min(confirmed, cat.numGroups * cat.qualifiersPerGroup);
         const qualSizes = (() => {
           const g = cat.numGroups;
@@ -314,6 +329,32 @@ export default async function SorteioPage({
                       ) : <GroupsFromStage stage={s} qualifyCount={qualifyCount} qualifiedIds={qualifiedIds} />}
                     </div>
                   ))}
+
+                  {qualifierTie && qualifierTie.ins.length > 0 && qualifierTie.outs.length > 0 && (
+                    <div className="rounded-xl border border-warning/40 bg-warning-bg/40 p-4">
+                      <p className="mb-1 flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                        <AlertTriangle className="size-4 text-warning" /> Empate pela última vaga (sorteio)
+                      </p>
+                      <p className="mb-3 text-xs text-muted">
+                        Estas duplas ficaram exatamente empatadas em tudo (vitórias, jogos e sets). Apura{qualifierTie.spots > 1 ? `m ${qualifierTie.spots}` : ""}. Faz o sorteio e escolhe quem fica no quadro.
+                      </p>
+                      <div className="space-y-2">
+                        {qualifierTie.outs.map((out) => (
+                          <div key={out.id} className="flex flex-wrap items-center gap-2 text-sm">
+                            <span className="text-muted">Pôr <strong className="text-zinc-900">{out.name}</strong> no lugar de:</span>
+                            {qualifierTie!.ins.map((inn) => (
+                              <form key={inn.id} action={swapQualifier}>
+                                <input type="hidden" name="categoryId" value={cat.id} />
+                                <input type="hidden" name="inEntryId" value={inn.id} />
+                                <input type="hidden" name="outEntryId" value={out.id} />
+                                <button className="rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-surface-soft">{inn.name}</button>
+                              </form>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {needQualifiers &&
                     (groupsDone ? (

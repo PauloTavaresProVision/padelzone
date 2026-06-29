@@ -283,6 +283,36 @@ export function seedEntrants(chosen: SeededItem[], n: number): EntryLite[] {
   return entrants;
 }
 
+export type RankLite = {
+  id: number; rank: number; won: number; played: number;
+  gamesFor: number; gamesAgainst: number; setsFor: number; setsAgainst: number;
+};
+
+// Deteta um EMPATE TOTAL na vaga de corte do apuramento: duplas indistinguíveis
+// por todos os critérios (posição, vitórias/jogos, dif. de jogos, dif. de sets) em
+// que umas apurariam e outras não. Devolve as duplas empatadas e quantas vagas há
+// para elas — para o organizador decidir por sorteio. Devolve null se não houver.
+export function findQualifierTies(rows: RankLite[], size: number): { spots: number; ids: number[] } | null {
+  const ratio = (r: RankLite) => (r.played ? r.won / r.played : 0);
+  const sorted = [...rows].sort(
+    (a, b) =>
+      a.rank - b.rank ||
+      ratio(b) - ratio(a) ||
+      (b.gamesFor - b.gamesAgainst) - (a.gamesFor - a.gamesAgainst) ||
+      (b.setsFor - b.setsAgainst) - (a.setsFor - a.setsAgainst),
+  );
+  const n = Math.max(2, Math.min(size || sorted.length, sorted.length));
+  if (n >= sorted.length) return null;
+  const key = (r: RankLite) => `${r.rank}|${ratio(r).toFixed(4)}|${r.gamesFor - r.gamesAgainst}|${r.setsFor - r.setsAgainst}`;
+  if (key(sorted[n - 1]) !== key(sorted[n])) return null;
+  const k = key(sorted[n - 1]);
+  let start = n - 1;
+  while (start > 0 && key(sorted[start - 1]) === k) start--;
+  let end = n;
+  while (end < sorted.length && key(sorted[end]) === k) end++;
+  return { spots: n - start, ids: sorted.slice(start, end).map((r) => r.id) };
+}
+
 // Apuramento FLEXÍVEL: ranking cruzado entre grupos (todos os 1ºs, depois os 2ºs, depois os
 // MELHORES 3ºs, 4ºs…) e o organizador escolhe quantas duplas apuram (tamanho do quadro).
 // Reconstrói o quadro a partir das classificações reais — pode ser refeito depois dos grupos.
