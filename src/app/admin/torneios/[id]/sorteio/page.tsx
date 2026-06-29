@@ -65,8 +65,12 @@ function GroupsFromStage({ stage, qualifyCount }: { stage: Stage; qualifyCount: 
     name: g.name,
     standings: stage.standings
       .filter((s) => s.groupId === g.id)
-      .map((s) => ({ name: entryName(s.entry), played: s.played, won: s.won, lost: s.lost, points: s.points }))
-      .sort((a, b) => b.points - a.points || b.won - a.won),
+      .map((s) => ({ name: entryName(s.entry), played: s.played, won: s.won, lost: s.lost, gamesFor: s.gamesFor, gamesAgainst: s.gamesAgainst, points: s.points }))
+      .sort(
+        (a, b) =>
+          (b.played ? b.won / b.played : 0) - (a.played ? a.won / a.played : 0) ||
+          (b.gamesFor - b.gamesAgainst) - (a.gamesFor - a.gamesAgainst),
+      ),
     matches: stage.matches
       .filter((m) => m.groupId === g.id)
       .map((m) => ({

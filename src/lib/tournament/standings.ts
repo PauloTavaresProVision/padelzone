@@ -1,6 +1,6 @@
 // Classificação (tabela de grupo / liga) a partir dos resultados.
-// Ordena por: pontos -> diferença de sets -> diferença de jogos.
-// (Confronto direto como 1.º critério fica como melhoria futura.)
+// Ordena por: confrontos ganhos vs jogados (vitórias ÷ jogos) -> diferença de
+// jogos (Pg - Ps) -> diferença de sets. (Mesmo critério do PadelTeams.)
 
 export interface MatchOutcome {
   homeId: number;
@@ -79,9 +79,11 @@ export function computeStandings(
 
   const setDiff = (r: StandingRow) => r.setsFor - r.setsAgainst;
   const gameDiff = (r: StandingRow) => r.gamesFor - r.gamesAgainst;
+  // Confrontos ganhos vs jogados (vitórias ÷ jogos jogados).
+  const winRatio = (r: StandingRow) => (r.played > 0 ? r.won / r.played : 0);
 
   const rows = [...table.values()].sort(
-    (x, y) => y.points - x.points || setDiff(y) - setDiff(x) || gameDiff(y) - gameDiff(x)
+    (x, y) => winRatio(y) - winRatio(x) || gameDiff(y) - gameDiff(x) || setDiff(y) - setDiff(x)
   );
   rows.forEach((row, i) => (row.rank = i + 1));
   return rows;

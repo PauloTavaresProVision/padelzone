@@ -263,14 +263,13 @@ export async function persistQualifiersFlexible(categoryId: number, size: number
   if (pending > 0) throw new Error("Ainda há jogos da fase de grupos por concluir.");
 
   // Ordena por posição no grupo e, dentro da mesma posição, pelos critérios de desempate
-  // (pontos, diferença de sets, diferença de jogos, vitórias) — comparação entre grupos.
+  // (confrontos ganhos vs jogados, diferença de jogos, diferença de sets) — comparação entre grupos.
   const ranked = [...gs.standings].sort(
     (a, b) =>
       a.rank - b.rank ||
-      b.points - a.points ||
-      (b.setsFor - b.setsAgainst) - (a.setsFor - a.setsAgainst) ||
+      (b.played ? b.won / b.played : 0) - (a.played ? a.won / a.played : 0) ||
       (b.gamesFor - b.gamesAgainst) - (a.gamesFor - a.gamesAgainst) ||
-      b.won - a.won,
+      (b.setsFor - b.setsAgainst) - (a.setsFor - a.setsAgainst),
   );
   const pool: SeededItem[] = ranked.map((st) => ({
     e: { id: st.entry.id, teamId: st.entry.teamId, playerId: st.entry.playerId, seed: null },

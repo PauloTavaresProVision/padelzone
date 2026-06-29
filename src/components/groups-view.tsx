@@ -1,4 +1,4 @@
-type GroupStanding = { name: string; played: number; won: number; lost: number; points: number };
+type GroupStanding = { name: string; played: number; won: number; lost: number; gamesFor: number; gamesAgainst: number; points: number };
 type GroupMatch = { round: number; a: string; b: string };
 type GroupBlock = { name: string; standings: GroupStanding[]; matches: GroupMatch[] };
 
@@ -28,6 +28,8 @@ export function GroupsView({ groups, qualifyCount = 0 }: { groups: GroupBlock[];
                 <th className="w-8 py-2 text-center font-semibold">J</th>
                 <th className="w-8 py-2 text-center font-semibold">V</th>
                 <th className="w-8 py-2 text-center font-semibold">D</th>
+                <th className="w-9 py-2 text-center font-semibold" title="Jogos ganhos">Pg</th>
+                <th className="w-9 py-2 text-center font-semibold" title="Jogos sofridos">Ps</th>
                 <th className="w-12 py-2 pr-3 text-right font-semibold">Pts</th>
               </tr>
             </thead>
@@ -47,6 +49,8 @@ export function GroupsView({ groups, qualifyCount = 0 }: { groups: GroupBlock[];
                     <td className="py-2.5 text-center tabular-nums text-muted">{s.played}</td>
                     <td className="py-2.5 text-center tabular-nums text-muted">{s.won}</td>
                     <td className="py-2.5 text-center tabular-nums text-muted">{s.lost}</td>
+                    <td className="py-2.5 text-center tabular-nums text-muted">{s.gamesFor}</td>
+                    <td className="py-2.5 text-center tabular-nums text-muted">{s.gamesAgainst}</td>
                     <td className="py-2.5 pr-3 text-right text-base font-bold tabular-nums text-brand-purple">{s.points}</td>
                   </tr>
                 );
