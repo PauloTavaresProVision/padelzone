@@ -1,23 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { computeStandings, type MatchOutcome } from "@/lib/tournament/standings";
+import { tallyGames, type SetScore } from "@/lib/tournament/score";
 
-export type SetScore = { a: number; b: number };
+export type { SetScore };
 
 export async function submitMatchResult(matchId: number, sets: SetScore[]) {
   const match = await prisma.match.findUnique({ where: { id: matchId }, include: { sides: { include: { players: true } } } });
   if (!match) throw new Error("Jogo não encontrado.");
   if (sets.length === 0) throw new Error("Indica pelo menos um set.");
 
-  let setsA = 0,
-    setsB = 0,
-    gamesA = 0,
-    gamesB = 0;
-  for (const s of sets) {
-    gamesA += s.a;
-    gamesB += s.b;
-    if (s.a > s.b) setsA++;
-    else if (s.b > s.a) setsB++;
-  }
+  const { setsA, setsB, gamesA, gamesB } = tallyGames(sets);
   if (setsA === setsB) throw new Error("O resultado tem de ter um vencedor.");
   const winnerSide = setsA > setsB ? "A" : "B";
   const score = { sets, setsA, setsB, gamesA, gamesB };
@@ -86,14 +78,18 @@ async function recomputeGroupStandings(stageId: number, groupId: number) {
     const ha = entryOf(a);
     const hb = entryOf(b);
     if (ha == null || hb == null) continue;
-    const sc = m.result.score as { setsA: number; setsB: number; gamesA: number; gamesB: number };
+    const sc = m.result.score as { sets?: SetScore[]; setsA: number; setsB: number; gamesA: number; gamesB: number };
+    // Re-conta a partir dos sets (corrige super tie-breaks antigos guardados como 10-8).
+    const t = Array.isArray(sc.sets)
+      ? tallyGames(sc.sets)
+      : { setsA: sc.setsA ?? 0, setsB: sc.setsB ?? 0, gamesA: sc.gamesA ?? 0, gamesB: sc.gamesB ?? 0 };
     outcomes.push({
       homeId: ha,
       awayId: hb,
-      homeSets: sc.setsA ?? 0,
-      awaySets: sc.setsB ?? 0,
-      homeGames: sc.gamesA ?? 0,
-      awayGames: sc.gamesB ?? 0,
+      homeSets: t.setsA,
+      awaySets: t.setsB,
+      homeGames: t.gamesA,
+      awayGames: t.gamesB,
     });
   }
 
