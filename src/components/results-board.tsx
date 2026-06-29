@@ -138,7 +138,13 @@ function GameCard({ g }: { g: Game }) {
           <div className={`${col} mb-1.5`}>
             <span />
             {[1, 2, 3].map((i) => (
-              <span key={i} className="text-center text-[11px] font-medium text-soft">Set {i}</span>
+              <span
+                key={i}
+                title={i === 3 ? "Set decisivo: super tie-break (ex.: 10-8)" : undefined}
+                className="text-center text-[11px] font-medium leading-tight text-soft"
+              >
+                {i === 3 ? "Super TB" : `Set ${i}`}
+              </span>
             ))}
           </div>
         )}
