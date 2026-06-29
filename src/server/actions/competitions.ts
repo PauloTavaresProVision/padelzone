@@ -146,15 +146,17 @@ export async function addCategoryFromTemplate(formData: FormData) {
   revalidatePath("/admin", "layout");
 }
 
-export async function updateCategory(formData: FormData) {
+export type CatState = { ok?: boolean; error?: string } | null;
+
+export async function updateCategory(_prev: CatState, formData: FormData): Promise<CatState> {
   const userId = await getSessionUserId();
-  if (!userId) throw new Error("Sessão expirada.");
+  if (!userId) return { error: "Sessão expirada." };
   const categoryId = Number(formData.get("categoryId"));
   const cat = await prisma.category.findUnique({
     where: { id: categoryId },
     include: { competition: { include: { club: { select: { slug: true } } } } },
   });
-  if (!cat) throw new Error("Categoria não encontrada.");
+  if (!cat) return { error: "Categoria não encontrada." };
   await requireClubManager(cat.competition.clubId, userId);
 
   await prisma.category.update({
@@ -166,6 +168,7 @@ export async function updateCategory(formData: FormData) {
     },
   });
   revalidatePath("/admin", "layout");
+  return { ok: true };
 }
 
 export async function removeCategory(formData: FormData) {
@@ -182,15 +185,15 @@ export async function removeCategory(formData: FormData) {
   revalidatePath("/admin", "layout");
 }
 
-export async function updateCategoryFormat(formData: FormData) {
+export async function updateCategoryFormat(_prev: CatState, formData: FormData): Promise<CatState> {
   const userId = await getSessionUserId();
-  if (!userId) throw new Error("Sessão expirada.");
+  if (!userId) return { error: "Sessão expirada." };
   const categoryId = Number(formData.get("categoryId"));
   const cat = await prisma.category.findUnique({
     where: { id: categoryId },
     include: { competition: { select: { clubId: true } } },
   });
-  if (!cat) throw new Error("Categoria não encontrada.");
+  if (!cat) return { error: "Categoria não encontrada." };
   await requireClubManager(cat.competition.clubId, userId);
 
   const format = String(formData.get("format") ?? "KNOCKOUT");
@@ -207,4 +210,5 @@ export async function updateCategoryFormat(formData: FormData) {
     },
   });
   revalidatePath("/admin", "layout");
+  return { ok: true };
 }

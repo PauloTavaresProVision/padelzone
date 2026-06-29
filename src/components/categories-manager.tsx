@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState } from "react";
 import { Trash2, Pencil, Plus, Users } from "lucide-react";
 import { addCategoryFromTemplate, updateCategory, removeCategory, updateCategoryFormat } from "@/server/actions/competitions";
 import { GENDER_LABEL } from "@/lib/categories";
@@ -96,6 +96,8 @@ function CategoryRow({ cat, canManage }: { cat: Cat; canManage: boolean }) {
   const [open, setOpen] = useState(false);
   const [format, setFormat] = useState(cat.format);
   const hasGroups = format === "GROUPS" || format === "GROUPS_KNOCKOUT";
+  const [detState, detAction, detPending] = useActionState(updateCategory, null);
+  const [fmtState, fmtAction, fmtPending] = useActionState(updateCategoryFormat, null);
 
   return (
     <li className="overflow-hidden rounded-xl border border-line">
@@ -135,7 +137,7 @@ function CategoryRow({ cat, canManage }: { cat: Cat; canManage: boolean }) {
       {/* Editor */}
       {canManage && open && (
         <div className="space-y-4 border-t border-line bg-surface-soft/40 p-4">
-          <form action={updateCategory} className="flex flex-wrap items-end gap-3">
+          <form action={detAction} className="flex flex-wrap items-end gap-3">
             <input type="hidden" name="categoryId" value={cat.id} />
             <div className="min-w-[10rem] flex-1">
               <label className={label}>Preço de inscrição</label>
@@ -152,10 +154,12 @@ function CategoryRow({ cat, canManage }: { cat: Cat; canManage: boolean }) {
               <label className={label}>Não jogar depois das</label>
               <input type="time" name="latestStart" defaultValue={cat.latestStart ?? ""} className={`${field} w-full`} />
             </div>
-            <button type="submit" className={primaryBtn}>Guardar</button>
+            <button type="submit" disabled={detPending} className={`${primaryBtn} disabled:opacity-60`}>{detPending ? "A guardar…" : "Guardar"}</button>
+            {detState?.ok && <span className="self-center text-sm font-medium text-success">Guardado ✓</span>}
+            {detState?.error && <span className="self-center text-sm font-medium text-danger">{detState.error}</span>}
           </form>
 
-          <form action={updateCategoryFormat} className="flex flex-wrap items-end gap-3 border-t border-line pt-4">
+          <form action={fmtAction} className="flex flex-wrap items-end gap-3 border-t border-line pt-4">
             <input type="hidden" name="categoryId" value={cat.id} />
             <div className="min-w-[12rem] flex-1">
               <label className={label}>Formato</label>
@@ -181,7 +185,9 @@ function CategoryRow({ cat, canManage }: { cat: Cat; canManage: boolean }) {
               <input type="checkbox" name="useSeeds" defaultChecked={cat.useSeeds} className="size-4 rounded border-line text-brand-purple focus:ring-brand-purple" />
               Tem cabeças de série
             </label>
-            <button type="submit" className={primaryBtn}>Guardar formato</button>
+            <button type="submit" disabled={fmtPending} className={`${primaryBtn} disabled:opacity-60`}>{fmtPending ? "A guardar…" : "Guardar formato"}</button>
+            {fmtState?.ok && <span className="self-center text-sm font-medium text-success">Guardado ✓</span>}
+            {fmtState?.error && <span className="self-center text-sm font-medium text-danger">{fmtState.error}</span>}
           </form>
         </div>
       )}
