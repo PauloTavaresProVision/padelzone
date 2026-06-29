@@ -168,17 +168,35 @@ export async function autoSchedule(formData: FormData) {
     }
   }
 
-  // Categorias com limite primeiro (limite mais cedo primeiro), depois o resto pela ordem normal.
-  const order = matches.map((mt, i) => ({ mt, i }));
+  const usedCourts = new Map<number, Set<number>>();
+  const busyTeams = new Map<number, Set<number>>();
+  const teamDays = new Map<number, Set<string>>(); // dias já ocupados por cada dupla (máx. 1 jogo/dia)
+
+  // PRESERVAR o que já está agendado (grupos jogados, jogos já marcados): ocupam os seus
+  // espaços (para não haver choques) e NÃO se re-agendam. Só agendamos os jogos sem hora.
+  const slotByWhen = new Map<number, number>();
+  slots.forEach((s, i) => slotByWhen.set(s.when.getTime(), i));
+  for (const mt of matches) {
+    if (!mt.scheduledAt) continue;
+    const day = mt.scheduledAt.toISOString().slice(0, 10);
+    const tA = mt.sides.find((s) => s.side === "A")?.teamId ?? null;
+    const tB = mt.sides.find((s) => s.side === "B")?.teamId ?? null;
+    for (const t of [tA, tB]) if (t) { const s = teamDays.get(t) ?? new Set<string>(); s.add(day); teamDays.set(t, s); }
+    const ti = slotByWhen.get(mt.scheduledAt.getTime());
+    if (ti != null) {
+      const uc = usedCourts.get(ti) ?? new Set<number>(); if (mt.courtId) uc.add(mt.courtId); usedCourts.set(ti, uc);
+      const bt = busyTeams.get(ti) ?? new Set<number>(); if (tA) bt.add(tA); if (tB) bt.add(tB); busyTeams.set(ti, bt);
+    }
+  }
+
+  // Só agendamos os jogos SEM hora. Categorias com limite primeiro (limite mais cedo primeiro).
+  const order = matches.filter((mt) => !mt.scheduledAt).map((mt, i) => ({ mt, i }));
   order.sort((a, b) => {
     const ca = catCutoff.get(a.mt.stage.category.id) ?? Infinity;
     const cb = catCutoff.get(b.mt.stage.category.id) ?? Infinity;
     return ca - cb || a.i - b.i;
   });
 
-  const usedCourts = new Map<number, Set<number>>();
-  const busyTeams = new Map<number, Set<number>>();
-  const teamDays = new Map<number, Set<string>>(); // dias já ocupados por cada dupla (máx. 1 jogo/dia)
   const updates: { id: number; courtId: number; when: Date }[] = [];
   const violations: number[] = [];
 
