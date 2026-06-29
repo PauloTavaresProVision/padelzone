@@ -207,7 +207,7 @@ type SeededItem = { e: EntryLite; group: number | null; rank: number };
 // Semeia o quadro afastando duplas do mesmo grupo (sem revanche na 1ª ronda; o 2º de um grupo
 // vai para a metade oposta à do 1º desse grupo). Só quando o quadro fica cheio (nº de apurados =
 // potência de 2); com isentos mantém a ordem por ranking (o construtor coloca os isentos certos).
-function seedEntrants(chosen: SeededItem[], n: number): EntryLite[] {
+export function seedEntrants(chosen: SeededItem[], n: number): EntryLite[] {
   const pow2 = n >= 2 && (n & (n - 1)) === 0;
   if (!pow2) return chosen.map((x) => x.e);
 
@@ -243,6 +243,40 @@ function seedEntrants(chosen: SeededItem[], n: number): EntryLite[] {
     }
     placed[bestSlot] = x;
   }
+
+  // GARANTIA: nenhum confronto da 1ª ronda (1/8) é do mesmo grupo. Troca duplas
+  // entre jogos (sem mexer nos 1ºs, que ficam no topo a jogar com os 3ºs) até
+  // não haver conflito. Tenta primeiro trocar entre o mesmo ranking (preserva
+  // 1ºs vs 3ºs); se não chegar, troca qualquer dupla que não seja cabeça de série.
+  const sameGroupR1 = (slot: number) => {
+    const x = placed[slot], y = placed[slot ^ 1];
+    return !!(x && y && x.group != null && x.group === y.group);
+  };
+  const repair = (sameRankOnly: boolean, moveWinners: boolean) => {
+    for (let pass = 0; pass < 4 * n; pass++) {
+      let bad = -1;
+      for (let s = 0; s < n; s++) if (sameGroupR1(s)) { bad = s; break; }
+      if (bad < 0) return true;
+      if (!moveWinners && placed[bad]!.rank === 1 && placed[bad ^ 1]!.rank !== 1) bad = bad ^ 1; // mover o não-cabeça
+      const x = placed[bad]!;
+      let done = false;
+      for (let j = 0; j < n && !done; j++) {
+        const y = placed[j];
+        if (!y || j === bad || j === (bad ^ 1)) continue;
+        if (!moveWinners && (x.rank === 1 || y.rank === 1)) continue;
+        if (sameRankOnly && y.rank !== x.rank) continue;
+        const xOpp = placed[j ^ 1], yOpp = placed[bad ^ 1];
+        const okX = !xOpp || xOpp.group == null || xOpp.group !== x.group;
+        const okY = !yOpp || yOpp.group == null || yOpp.group !== y.group;
+        if (okX && okY) { placed[bad] = y; placed[j] = x; done = true; }
+      }
+      if (!done) return false;
+    }
+    return true;
+  };
+  // 1) troca entre o mesmo ranking (mantém 1ºs vs 3ºs); 2) qualquer não-cabeça;
+  // 3) último recurso: troca cabeças de série (a separação por grupo é prioritária).
+  if (!repair(true, false) && !repair(false, false)) repair(false, true);
 
   const entrants: EntryLite[] = new Array(n);
   for (let j = 0; j < n; j++) entrants[order[j] - 1] = placed[j]!.e;
