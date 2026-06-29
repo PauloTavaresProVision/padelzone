@@ -8,6 +8,8 @@ export type SchedGame = {
   id: number;
   section: string;
   sectionOrder: number;
+  cat: string;
+  color: { border: string; bg: string; text: string };
   nameA: string;
   nameB: string;
   courtId: number | null;
@@ -120,12 +122,14 @@ function GameRow({ g, courts }: { g: SchedGame; courts: Court[] }) {
   return (
     <form
       action={scheduleMatch}
-      className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900"
+      style={{ borderLeftColor: g.color.border }}
+      className="rounded-xl border border-l-[3px] border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900"
     >
       <input type="hidden" name="matchId" value={g.id} />
       <div className="flex items-center justify-between gap-2">
-        <span className="min-w-0 truncate text-sm text-zinc-800 dark:text-zinc-200">
-          {g.nameA} <span className="mx-1 text-zinc-400">vs</span> {g.nameB}
+        <span className="flex min-w-0 items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
+          <span className="shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold" style={{ background: g.color.bg, color: g.color.text }}>{g.cat}</span>
+          <span className="truncate">{g.nameA} <span className="mx-1 text-zinc-400">vs</span> {g.nameB}</span>
         </span>
         {g.whenLabel && (
           <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-brand-purple/10 px-2 py-0.5 text-[11px] font-medium text-brand-purple">

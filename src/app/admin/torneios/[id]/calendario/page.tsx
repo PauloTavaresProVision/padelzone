@@ -67,6 +67,13 @@ export default async function CalendarioPage({
     };
   });
 
+  // Cor por categoria (matiz espalhado pelo espectro, estável dentro do torneio).
+  const distinctCats = [...new Set(games.map((g) => g.cat))].sort();
+  const catColor = (cat: string) => {
+    const h = Math.round((Math.max(0, distinctCats.indexOf(cat)) * 360) / Math.max(1, distinctCats.length));
+    return { border: `hsl(${h} 65% 45%)`, bg: `hsl(${h} 70% 96%)`, text: `hsl(${h} 55% 30%)` };
+  };
+
   const view = sp.view === "list" ? "list" : "grid";
   const dur = comp.matchDuration || 75;
 
@@ -85,6 +92,8 @@ export default async function CalendarioPage({
     id: g.id,
     section: `${g.cat} · ${g.section}`,
     sectionOrder: i,
+    cat: g.cat,
+    color: catColor(g.cat),
     nameA: g.nameA,
     nameB: g.nameB,
     courtId: g.courtId,
@@ -182,6 +191,21 @@ export default async function CalendarioPage({
         <CalendarTvButtons compId={comp.id} />
       </div>
 
+      {/* Legenda de cores por categoria */}
+      {distinctCats.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted">Categorias:</span>
+          {distinctCats.map((c) => {
+            const col = catColor(c);
+            return (
+              <span key={c} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold" style={{ background: col.bg, color: col.text, border: `1px solid ${col.border}` }}>
+                <span className="size-2 rounded-full" style={{ background: col.border }} /> {c}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
       {courts.length === 0 && (
         <p className="rounded-xl border border-warning/30 bg-warning-bg p-3 text-sm text-warning">
           Este clube ainda não tem campos. Adiciona-os em <strong>Campos</strong>.
@@ -238,6 +262,7 @@ export default async function CalendarioPage({
                                 done: g.done,
                               }}
                               courts={courts}
+                              color={catColor(g.cat)}
                             />
                           )}
                         </td>
