@@ -177,7 +177,10 @@ export default async function SorteioPage({
         const koStage = stages.find((s) => s.type === "KNOCKOUT");
         const formatLabel = FORMAT_LABEL[cat.format] ?? cat.format;
         const groupsDone = groupStage ? groupStage.matches.length > 0 && groupStage.matches.every((m) => m.status === "DONE") : false;
-        const needQualifiers = cat.format === "GROUPS_KNOCKOUT" && !!groupStage && !koStage;
+        // O quadro pode existir só como esqueleto ("Apurado N", sem duplas). Está "preenchido"
+        // quando já tem duplas reais. Enquanto não estiver, mostra-se o botão de apuramento.
+        const koFilled = !!koStage && koStage.matches.some((km) => km.sides.some((s) => s.teamId != null));
+        const needQualifiers = cat.format === "GROUPS_KNOCKOUT" && !!groupStage;
         const qualifyCount = cat.format === "GROUPS_KNOCKOUT" ? cat.qualifiersPerGroup : 0;
         const defaultQ = Math.min(confirmed, cat.numGroups * cat.qualifiersPerGroup);
         const qualSizes = (() => {
@@ -281,7 +284,7 @@ export default async function SorteioPage({
                           </select>
                         </div>
                         <button className="pz-gradient inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95">
-                          <Trophy className="size-4" /> Gerar quadro de apuramento
+                          <Trophy className="size-4" /> {koFilled ? "Refazer quadro de apuramento" : "Gerar quadro de apuramento"}
                         </button>
                         <span className="max-w-md text-xs text-muted">Apura por ordem: todos os 1ºs, depois os 2ºs e, se faltarem para encher o quadro, os melhores 3ºs, 4ºs… comparados entre todos os grupos. Podes voltar a gerar.</span>
                       </form>
