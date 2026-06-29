@@ -60,12 +60,12 @@ function BracketFromStage({ stage }: { stage: Stage }) {
   return <BracketView rounds={rounds} />;
 }
 
-function GroupsFromStage({ stage, qualifyCount }: { stage: Stage; qualifyCount: number }) {
+function GroupsFromStage({ stage, qualifyCount, qualifiedIds }: { stage: Stage; qualifyCount: number; qualifiedIds: Set<number> }) {
   const blocks = stage.groups.map((g) => ({
     name: g.name,
     standings: stage.standings
       .filter((s) => s.groupId === g.id)
-      .map((s) => ({ name: entryName(s.entry), played: s.played, won: s.won, lost: s.lost, gamesFor: s.gamesFor, gamesAgainst: s.gamesAgainst, points: s.points }))
+      .map((s) => ({ name: entryName(s.entry), played: s.played, won: s.won, lost: s.lost, gamesFor: s.gamesFor, gamesAgainst: s.gamesAgainst, points: s.points, best: qualifiedIds.has(s.entry.id) }))
       .sort(
         (a, b) =>
           (b.played ? b.won / b.played : 0) - (a.played ? a.won / a.played : 0) ||
@@ -186,6 +186,21 @@ export default async function SorteioPage({
         const koFilled = !!koStage && koStage.matches.some((km) => km.sides.some((s) => s.teamId != null));
         const needQualifiers = cat.format === "GROUPS_KNOCKOUT" && !!groupStage;
         const qualifyCount = cat.format === "GROUPS_KNOCKOUT" ? cat.qualifiersPerGroup : 0;
+        // Entradas que estão no quadro (apurados) — para destacar a amarelo os melhores 3ºs.
+        const qualifiedIds = new Set<number>();
+        if (groupStage && koStage) {
+          const teamToEntry = new Map<number, number>();
+          const playerToEntry = new Map<number, number>();
+          for (const st of groupStage.standings) {
+            if (st.entry.teamId) teamToEntry.set(st.entry.teamId, st.entry.id);
+            if (st.entry.playerId) playerToEntry.set(st.entry.playerId, st.entry.id);
+          }
+          for (const m of koStage.matches)
+            for (const side of m.sides) {
+              if (side.teamId != null && teamToEntry.has(side.teamId)) qualifiedIds.add(teamToEntry.get(side.teamId)!);
+              for (const p of side.players) if (playerToEntry.has(p.playerId)) qualifiedIds.add(playerToEntry.get(p.playerId)!);
+            }
+        }
         const defaultQ = Math.min(confirmed, cat.numGroups * cat.qualifiersPerGroup);
         const qualSizes = (() => {
           const g = cat.numGroups;
@@ -290,12 +305,13 @@ export default async function SorteioPage({
                                 <li>As cabeças de série são os <strong>1ºs dos grupos</strong>, por ordem de classificação.</li>
                                 <li>Cada 1º joga contra um dos <strong>últimos apurados</strong>: primeiro os 3ºs e, quando faltam, os piores 2ºs.</li>
                                 <li>Duplas do <strong>mesmo grupo</strong> nunca se cruzam na 1ª ronda.</li>
+                                <li>Nas tabelas dos grupos, os <strong className="text-warning">melhores 3ºs</strong> apurados aparecem a amarelo.</li>
                               </ul>
                             </div>
                           )}
                           <BracketFromStage stage={s} />
                         </>
-                      ) : <GroupsFromStage stage={s} qualifyCount={qualifyCount} />}
+                      ) : <GroupsFromStage stage={s} qualifyCount={qualifyCount} qualifiedIds={qualifiedIds} />}
                     </div>
                   ))}
 

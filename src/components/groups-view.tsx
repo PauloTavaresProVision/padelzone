@@ -1,4 +1,4 @@
-type GroupStanding = { name: string; played: number; won: number; lost: number; gamesFor: number; gamesAgainst: number; points: number };
+type GroupStanding = { name: string; played: number; won: number; lost: number; gamesFor: number; gamesAgainst: number; points: number; best?: boolean };
 type GroupMatch = { round: number; a: string; b: string };
 type GroupBlock = { name: string; standings: GroupStanding[]; matches: GroupMatch[] };
 
@@ -37,12 +37,13 @@ export function GroupsView({ groups, qualifyCount = 0 }: { groups: GroupBlock[];
             <tbody>
               {group.standings.map((s, i) => {
                 const qual = qualifyCount > 0 && i < qualifyCount;
+                const best = !qual && !!s.best;
                 const [p1, p2] = splitPair(s.name);
                 const diff = s.gamesFor - s.gamesAgainst;
                 return (
-                  <tr key={s.name} className={`border-t border-line align-middle ${qual ? "bg-success-bg/40" : ""}`}>
+                  <tr key={s.name} className={`border-t border-line align-middle ${qual ? "bg-success-bg/40" : best ? "bg-warning-bg/40" : ""}`}>
                     <td className="py-2.5 pl-3">
-                      <span className={`grid size-5 place-items-center rounded-full text-[11px] font-bold ${qual ? "bg-success text-white" : "bg-surface-soft text-muted"}`}>{i + 1}</span>
+                      <span className={`grid size-5 place-items-center rounded-full text-[11px] font-bold ${qual ? "bg-success text-white" : best ? "bg-warning text-white" : "bg-surface-soft text-muted"}`}>{i + 1}</span>
                     </td>
                     <td className="min-w-0 py-2.5 pr-2">
                       <p className="truncate font-medium text-zinc-900">{p1}</p>
