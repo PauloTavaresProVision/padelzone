@@ -154,7 +154,7 @@ export async function autoSchedule(formData: FormData) {
   const base = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
   const needed = matches.length + 1;
 
-  type Slot = { when: Date; min: number; key: string };
+  type Slot = { when: Date; min: number; key: string; day: string };
   const slots: Slot[] = [];
   for (let day = 0; day <= 400 && slots.length < needed; day++) {
     const dayMs = base + day * 86400000;
@@ -164,7 +164,7 @@ export async function autoSchedule(formData: FormData) {
     const eMin = Math.max(sMin + dur, toMin(weekend ? comp.weekendEnd : comp.weekdayEnd) ?? 0);
     const date = new Date(dayMs).toISOString().slice(0, 10);
     for (let t = sMin; t + dur <= eMin && slots.length < needed; t += dur) {
-      slots.push({ when: new Date(dayMs + t * 60000), min: t, key: `${date}:${periodOf(t)}` });
+      slots.push({ when: new Date(dayMs + t * 60000), min: t, key: `${date}:${periodOf(t)}`, day: date });
     }
   }
 
@@ -178,6 +178,7 @@ export async function autoSchedule(formData: FormData) {
 
   const usedCourts = new Map<number, Set<number>>();
   const busyTeams = new Map<number, Set<number>>();
+  const teamDays = new Map<number, Set<string>>(); // dias já ocupados por cada dupla (máx. 1 jogo/dia)
   const updates: { id: number; courtId: number; when: Date }[] = [];
   const violations: number[] = [];
 
@@ -198,12 +199,16 @@ export async function autoSchedule(formData: FormData) {
         if (respect) {
           if (cutoff != null && slots[ti].min > cutoff) continue;
           if (offA?.has(slots[ti].key) || offB?.has(slots[ti].key)) continue;
+          // No máximo 1 jogo por dupla por dia (espalha pelos dias, como o PadelTeams).
+          if (tA && teamDays.get(tA)?.has(slots[ti].day)) continue;
+          if (tB && teamDays.get(tB)?.has(slots[ti].day)) continue;
         }
         const court = courts.find((c) => !uc.has(c.id));
         if (!court) continue;
+        const markDay = (t: number) => { const s = teamDays.get(t) ?? new Set<string>(); s.add(slots[ti].day); teamDays.set(t, s); };
         uc.add(court.id); usedCourts.set(ti, uc);
-        if (tA) bt.add(tA);
-        if (tB) bt.add(tB);
+        if (tA) { bt.add(tA); markDay(tA); }
+        if (tB) { bt.add(tB); markDay(tB); }
         busyTeams.set(ti, bt);
         updates.push({ id: match.id, courtId: court.id, when: slots[ti].when });
         return true;
