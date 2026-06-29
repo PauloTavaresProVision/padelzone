@@ -188,9 +188,18 @@ export default async function SorteioPage({
         const qualifyCount = cat.format === "GROUPS_KNOCKOUT" ? cat.qualifiersPerGroup : 0;
         const defaultQ = Math.min(confirmed, cat.numGroups * cat.qualifiersPerGroup);
         const qualSizes = (() => {
+          const g = cat.numGroups;
+          // Descreve a composição do quadro: "X de cada grupo (+ R melhores (X+1)ºs)".
+          const describe = (n: number) => {
+            const per = Math.floor(n / g);
+            const rem = n % g;
+            if (per < 1) return `${n} melhores 1ºs`;
+            const base = `${per} de cada grupo`;
+            return rem > 0 ? `${base} + ${rem} melhores ${per + 1}ºs` : base;
+          };
           const m = new Map<number, string>();
-          for (const s of [4, 8, 16, 32]) if (s >= 2 && s <= confirmed) m.set(s, `${s} duplas`);
-          if (defaultQ >= 2) m.set(defaultQ, `Top ${cat.qualifiersPerGroup} de cada grupo (${defaultQ})`);
+          for (const s of [4, 8, 16, 32]) if (s >= 2 && s <= confirmed) m.set(s, `${describe(s)} (${s})`);
+          if (defaultQ >= 2) m.set(defaultQ, `${describe(defaultQ)} (${defaultQ})`);
           if (confirmed >= 2) m.set(confirmed, `Todas (${confirmed})`);
           return [...m.entries()].filter(([v]) => v >= 2).sort((a, b) => a[0] - b[0]);
         })();
