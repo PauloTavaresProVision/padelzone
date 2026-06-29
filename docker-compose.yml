@@ -8,7 +8,8 @@ services:
       POSTGRES_PASSWORD: padelzone
       POSTGRES_DB: padelzone
     ports:
-      - "5433:5432"
+      # Preso ao localhost: o Postgres não fica exposto para fora do servidor.
+      - "127.0.0.1:5433:5432"
     volumes:
       - padelzone_pgdata:/var/lib/postgresql/data
     healthcheck:
