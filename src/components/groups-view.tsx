@@ -12,7 +12,7 @@ export function GroupsView({ groups, qualifyCount = 0 }: { groups: GroupBlock[];
   if (groups.length === 0) return <p className="text-sm text-soft">Sem grupos.</p>;
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
       {groups.map((group) => (
         <div key={group.name} className="overflow-hidden rounded-2xl border border-line bg-surface">
           <div className="flex items-center justify-between border-b border-line bg-surface-soft/60 px-4 py-2.5">
@@ -25,11 +25,11 @@ export function GroupsView({ groups, qualifyCount = 0 }: { groups: GroupBlock[];
               <tr className="text-[11px] uppercase tracking-wide text-soft">
                 <th className="w-9 py-2 pl-3 text-left font-semibold">#</th>
                 <th className="py-2 text-left font-semibold">Dupla</th>
-                <th className="w-8 py-2 text-center font-semibold">J</th>
+                <th className="hidden w-8 py-2 text-center font-semibold sm:table-cell">J</th>
                 <th className="w-8 py-2 text-center font-semibold">V</th>
-                <th className="w-8 py-2 text-center font-semibold">D</th>
-                <th className="w-9 py-2 text-center font-semibold" title="Jogos ganhos">Pg</th>
-                <th className="w-9 py-2 text-center font-semibold" title="Jogos sofridos">Ps</th>
+                <th className="hidden w-8 py-2 text-center font-semibold sm:table-cell">D</th>
+                <th className="hidden w-9 py-2 text-center font-semibold md:table-cell" title="Jogos ganhos">Pg</th>
+                <th className="hidden w-9 py-2 text-center font-semibold md:table-cell" title="Jogos sofridos">Ps</th>
                 <th className="w-11 py-2 text-center font-semibold" title="Diferença de jogos (Pg menos Ps)">Dif.</th>
                 <th className="w-12 py-2 pr-3 text-right font-semibold">Pts</th>
               </tr>
@@ -49,11 +49,11 @@ export function GroupsView({ groups, qualifyCount = 0 }: { groups: GroupBlock[];
                       <p className="truncate font-medium text-zinc-900">{p1}</p>
                       {p2 && <p className="truncate text-zinc-600">{p2}</p>}
                     </td>
-                    <td className="py-2.5 text-center tabular-nums text-muted">{s.played}</td>
+                    <td className="hidden py-2.5 text-center tabular-nums text-muted sm:table-cell">{s.played}</td>
                     <td className="py-2.5 text-center tabular-nums text-muted">{s.won}</td>
-                    <td className="py-2.5 text-center tabular-nums text-muted">{s.lost}</td>
-                    <td className="py-2.5 text-center tabular-nums text-muted">{s.gamesFor}</td>
-                    <td className="py-2.5 text-center tabular-nums text-muted">{s.gamesAgainst}</td>
+                    <td className="hidden py-2.5 text-center tabular-nums text-muted sm:table-cell">{s.lost}</td>
+                    <td className="hidden py-2.5 text-center tabular-nums text-muted md:table-cell">{s.gamesFor}</td>
+                    <td className="hidden py-2.5 text-center tabular-nums text-muted md:table-cell">{s.gamesAgainst}</td>
                     <td className="py-2.5 text-center tabular-nums font-semibold text-zinc-700">{diff > 0 ? `+${diff}` : diff}</td>
                     <td className="py-2.5 pr-3 text-right text-base font-bold tabular-nums text-brand-purple">{s.points}</td>
                   </tr>
