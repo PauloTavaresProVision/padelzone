@@ -30,6 +30,7 @@ export function GroupsView({ groups, qualifyCount = 0 }: { groups: GroupBlock[];
                 <th className="w-8 py-2 text-center font-semibold">D</th>
                 <th className="w-9 py-2 text-center font-semibold" title="Jogos ganhos">Pg</th>
                 <th className="w-9 py-2 text-center font-semibold" title="Jogos sofridos">Ps</th>
+                <th className="w-11 py-2 text-center font-semibold" title="Diferença de jogos (Pg menos Ps)">Dif.</th>
                 <th className="w-12 py-2 pr-3 text-right font-semibold">Pts</th>
               </tr>
             </thead>
@@ -37,6 +38,7 @@ export function GroupsView({ groups, qualifyCount = 0 }: { groups: GroupBlock[];
               {group.standings.map((s, i) => {
                 const qual = qualifyCount > 0 && i < qualifyCount;
                 const [p1, p2] = splitPair(s.name);
+                const diff = s.gamesFor - s.gamesAgainst;
                 return (
                   <tr key={s.name} className={`border-t border-line align-middle ${qual ? "bg-success-bg/40" : ""}`}>
                     <td className="py-2.5 pl-3">
@@ -51,6 +53,7 @@ export function GroupsView({ groups, qualifyCount = 0 }: { groups: GroupBlock[];
                     <td className="py-2.5 text-center tabular-nums text-muted">{s.lost}</td>
                     <td className="py-2.5 text-center tabular-nums text-muted">{s.gamesFor}</td>
                     <td className="py-2.5 text-center tabular-nums text-muted">{s.gamesAgainst}</td>
+                    <td className="py-2.5 text-center tabular-nums font-semibold text-zinc-700">{diff > 0 ? `+${diff}` : diff}</td>
                     <td className="py-2.5 pr-3 text-right text-base font-bold tabular-nums text-brand-purple">{s.points}</td>
                   </tr>
                 );
