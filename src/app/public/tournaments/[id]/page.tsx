@@ -515,7 +515,6 @@ type Game = {
 };
 
 function MatchCard({ g, t }: { g: Game; t: T }) {
-  const sets = g.sets?.map((s) => `${s.a}-${s.b}`).join("  ") ?? "";
   return (
     <div className="pz-shadow-soft rounded-2xl border border-line bg-surface p-4">
       <div className="flex items-center justify-between gap-2">
@@ -523,7 +522,7 @@ function MatchCard({ g, t }: { g: Game; t: T }) {
         {g.live ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-danger px-2 py-0.5 text-[10px] font-bold uppercase text-white"><span className="size-1.5 animate-pulse rounded-full bg-white" /> {t("Ao vivo")}</span>
         ) : g.done ? (
-          <span className="rounded-full bg-success-bg px-2 py-0.5 text-[10px] font-bold uppercase text-success">{t("Final")}</span>
+          <span className="rounded-full bg-success-bg px-2 py-0.5 text-[10px] font-bold uppercase text-success">{t("Terminado")}</span>
         ) : g.when ? (
           <span className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-900"><Clock className="size-3.5 text-soft" /> {timeFmt.format(g.when)}</span>
         ) : (
@@ -531,14 +530,27 @@ function MatchCard({ g, t }: { g: Game; t: T }) {
         )}
       </div>
       <div className="mt-3 space-y-1.5">
-        <p className={`truncate text-sm ${g.done && g.winner === "A" ? "font-bold text-zinc-900" : "font-semibold text-zinc-800"}`}>{g.nameA}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className={`flex min-w-0 items-center gap-1.5 truncate text-sm ${g.done && g.winner === "A" ? "font-bold text-zinc-900" : g.done ? "text-soft" : "font-semibold text-zinc-800"}`}>
+            {g.done && g.winner === "A" && <Trophy className="size-3.5 shrink-0 text-warning" />}
+            <span className="truncate">{g.nameA}</span>
+          </p>
+          {g.done && g.sets && <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-zinc-700">{g.sets.map((s) => s.a).join("  ")}</span>}
+        </div>
         <div className="flex items-center gap-2"><div className="h-px flex-1 bg-line" /><span className="text-[10px] font-bold text-soft">VS</span><div className="h-px flex-1 bg-line" /></div>
-        <p className={`truncate text-sm ${g.done && g.winner === "B" ? "font-bold text-zinc-900" : "font-semibold text-zinc-800"}`}>{g.nameB}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className={`flex min-w-0 items-center gap-1.5 truncate text-sm ${g.done && g.winner === "B" ? "font-bold text-zinc-900" : g.done ? "text-soft" : "font-semibold text-zinc-800"}`}>
+            {g.done && g.winner === "B" && <Trophy className="size-3.5 shrink-0 text-warning" />}
+            <span className="truncate">{g.nameB}</span>
+          </p>
+          {g.done && g.sets && <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-zinc-700">{g.sets.map((s) => s.b).join("  ")}</span>}
+        </div>
       </div>
-      <div className="mt-2.5 flex items-center justify-between gap-2 text-xs text-soft">
-        {g.court ? <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" /> {g.court}</span> : <span />}
-        {g.done && sets && <span className="font-mono text-sm font-bold tabular-nums text-success">{sets}</span>}
-      </div>
+      {g.court && (
+        <div className="mt-2.5 flex items-center gap-2 text-xs text-soft">
+          <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" /> {g.court}</span>
+        </div>
+      )}
     </div>
   );
 }

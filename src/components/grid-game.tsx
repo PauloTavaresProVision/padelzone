@@ -40,7 +40,7 @@ export function GridGame({ game, courts, color }: { game: Game; courts: Court[];
       >
         <div className="flex items-center justify-between gap-1">
           <span className="text-[10px] text-muted">{game.timeRange}</span>
-          {game.done && <span className="text-[10px] font-bold text-success">✓</span>}
+          {game.done && <span className="rounded bg-success-bg px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-success">Terminado</span>}
         </div>
         <p className="text-[11px] font-bold" style={{ color: color.text }}>{game.cat} · {game.section}</p>
         <p className="truncate text-xs text-zinc-800">{game.nameA}</p>
