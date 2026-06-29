@@ -8,9 +8,11 @@ import { notifyPlayers } from "@/lib/notify";
 
 const MANAGER_ROLES = ["CLUB_OWNER", "DIRECTOR", "STAFF"];
 
-export async function submitResult(formData: FormData) {
+export type ResultState = { ok?: boolean; error?: string } | null;
+
+export async function submitResult(_prev: ResultState, formData: FormData): Promise<ResultState> {
   const userId = await getSessionUserId();
-  if (!userId) throw new Error("Sessão expirada.");
+  if (!userId) return { error: "Sessão expirada." };
   const matchId = Number(formData.get("matchId"));
 
   const match = await prisma.match.findUnique({
@@ -19,11 +21,11 @@ export async function submitResult(formData: FormData) {
       stage: { include: { category: { include: { competition: { include: { club: { select: { slug: true } } } } } } } },
     },
   });
-  if (!match) throw new Error("Jogo não encontrado.");
+  if (!match) return { error: "Jogo não encontrado." };
 
   const clubId = match.stage.category.competition.clubId;
   const m = await prisma.clubUser.findUnique({ where: { clubId_userId: { clubId, userId } } });
-  if (!m || !MANAGER_ROLES.includes(m.role)) throw new Error("Sem permissão.");
+  if (!m || !MANAGER_ROLES.includes(m.role)) return { error: "Sem permissão." };
 
   const sets: SetScore[] = [];
   for (let i = 1; i <= 3; i++) {
@@ -34,7 +36,11 @@ export async function submitResult(formData: FormData) {
     }
   }
 
-  await submitMatchResult(matchId, sets);
+  try {
+    await submitMatchResult(matchId, sets);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Não foi possível guardar o resultado." };
+  }
 
   // Avisar as duas duplas do resultado (best-effort).
   try {
@@ -63,4 +69,5 @@ export async function submitResult(formData: FormData) {
   }
 
   revalidatePath("/admin", "layout");
+  return { ok: true };
 }

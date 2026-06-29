@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState } from "react";
 import { Search, MapPin, CalendarClock, Clock, Trophy } from "lucide-react";
-import { submitResult } from "@/server/actions/results";
+import { submitResult, type ResultState } from "@/server/actions/results";
 
 export type Game = {
   id: number;
@@ -109,6 +109,7 @@ export function ResultsBoard({ games, categories }: { games: Game[]; categories:
 }
 
 function GameCard({ g }: { g: Game }) {
+  const [state, action, pending] = useActionState<ResultState, FormData>(submitResult, null);
   const ready = g.realA && g.realB;
   const status = !ready
     ? { label: "Aguarda apuramento", dot: "bg-soft", cls: "bg-surface-soft text-soft" }
@@ -130,7 +131,7 @@ function GameCard({ g }: { g: Game }) {
         </span>
       </div>
 
-      <form action={submitResult}>
+      <form action={action}>
         <input type="hidden" name="matchId" value={g.id} />
 
         {ready && (
@@ -172,11 +173,13 @@ function GameCard({ g }: { g: Game }) {
             {!ready && <span className="inline-flex items-center gap-1.5"><Clock className="size-3.5" /> Aguarda jogos anteriores</span>}
           </div>
           {ready && (
-            <button type="submit" className="pz-gradient w-full rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95 sm:w-auto">
-              {g.done ? "Atualizar resultado" : "Guardar resultado"}
+            <button type="submit" disabled={pending} className="pz-gradient w-full rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95 disabled:opacity-60 sm:w-auto">
+              {pending ? "A guardar…" : g.done ? "Atualizar resultado" : "Guardar resultado"}
             </button>
           )}
         </div>
+        {state?.error && <p className="mt-2 rounded-lg bg-danger-bg px-3 py-1.5 text-xs font-medium text-danger">{state.error}</p>}
+        {state?.ok && <p className="mt-2 text-xs font-medium text-success">✓ Resultado guardado.</p>}
       </form>
     </div>
   );
