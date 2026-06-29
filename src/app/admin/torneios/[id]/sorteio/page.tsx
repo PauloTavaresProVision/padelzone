@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Shuffle, Trash2, Trophy, Radio, Users, Sparkles } from "lucide-react";
+import { Shuffle, Trash2, Trophy, Radio, Users, Sparkles, Info } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { getMyClub } from "@/server/clubs";
@@ -279,7 +279,23 @@ export default async function SorteioPage({
                         <span className="size-1.5 rounded-full bg-brand-purple" />
                         <span className="text-xs font-bold uppercase tracking-wide text-soft">{s.name}</span>
                       </div>
-                      {s.type === "KNOCKOUT" ? <BracketFromStage stage={s} /> : <GroupsFromStage stage={s} qualifyCount={qualifyCount} />}
+                      {s.type === "KNOCKOUT" ? (
+                        <>
+                          {cat.format === "GROUPS_KNOCKOUT" && koFilled && (
+                            <div className="mb-3 rounded-xl border border-line bg-surface-soft/50 px-4 py-3 text-xs leading-relaxed text-muted">
+                              <p className="mb-1 flex items-center gap-1.5 font-semibold text-zinc-700">
+                                <Info className="size-3.5 text-brand-purple" /> Como foi feito este quadro
+                              </p>
+                              <ul className="ml-1 list-inside list-disc space-y-0.5">
+                                <li>As cabeças de série são os <strong>1ºs dos grupos</strong>, por ordem de classificação.</li>
+                                <li>Cada 1º joga contra um dos <strong>últimos apurados</strong>: primeiro os 3ºs e, quando faltam, os piores 2ºs.</li>
+                                <li>Duplas do <strong>mesmo grupo</strong> nunca se cruzam na 1ª ronda.</li>
+                              </ul>
+                            </div>
+                          )}
+                          <BracketFromStage stage={s} />
+                        </>
+                      ) : <GroupsFromStage stage={s} qualifyCount={qualifyCount} />}
                     </div>
                   ))}
 
