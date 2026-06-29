@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+/* O backoffice é sempre tema claro (guia PadelZone) — dark: só se houver .dark explícito. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #111827;
+
+  /* Marca / primárias */
+  --brand-navy: #1e2333;
+  --brand-purple: #2f38f2; /* primary */
+  --brand-purple-2: #5b2eff; /* fim do gradiente */
+  --brand-coral: #f15b4c;
+
+  /* Sistema de design */
+  --pz-app: #f7f8fc;
+  --pz-surface: #ffffff;
+  --pz-surface-soft: #f3f5fa;
+  --pz-line: #e3e7ef;
+  --pz-line-strong: #d3d8e4;
+  --pz-text: #111827;
+  --pz-muted: #667085;
+  --pz-soft: #98a2b3;
+  --pz-primary-light: #eef0ff;
+  --pz-success: #16a34a;
+  --pz-success-bg: #eaf8ef;
+  --pz-warning: #f59e0b;
+  --pz-warning-bg: #fff4e5;
+  --pz-danger: #ef4444;
+  --pz-danger-bg: #feecec;
+
+  --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-purple: var(--brand-purple);
+  --color-brand-purple-2: var(--brand-purple-2);
+  --color-brand-coral: var(--brand-coral);
+
+  --color-app: var(--pz-app);
+  --color-surface: var(--pz-surface);
+  --color-surface-soft: var(--pz-surface-soft);
+  --color-line: var(--pz-line);
+  --color-line-strong: var(--pz-line-strong);
+  --color-muted: var(--pz-muted);
+  --color-soft: var(--pz-soft);
+  --color-primary-light: var(--pz-primary-light);
+  --color-success: var(--pz-success);
+  --color-success-bg: var(--pz-success-bg);
+  --color-warning: var(--pz-warning);
+  --color-warning-bg: var(--pz-warning-bg);
+  --color-danger: var(--pz-danger);
+  --color-danger-bg: var(--pz-danger-bg);
+
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+}
+
+/* Gradiente da marca — estados ativos e botões primários */
+.pz-gradient {
+  background-image: linear-gradient(135deg, var(--brand-purple), var(--brand-purple-2));
+}
+.pz-shadow-card {
+  box-shadow: var(--shadow-card);
+}
+.pz-shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+body {
+  background: var(--pz-app);
+  color: var(--pz-text);
+  font-family: var(--font-inter), Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Conteúdo do regulamento (editor + público) */
+.rules-content h1, .rules-content h2 { font-size: 1.15rem; font-weight: 700; margin: 0.85rem 0 0.4rem; color: var(--brand-navy); }
+.rules-content h3 { font-size: 1.02rem; font-weight: 700; margin: 0.7rem 0 0.3rem; color: var(--brand-navy); }
+.rules-content p { margin: 0.45rem 0; }
+.rules-content ul { list-style: disc; padding-left: 1.4rem; margin: 0.45rem 0; }
+.rules-content ol { list-style: decimal; padding-left: 1.4rem; margin: 0.45rem 0; }
+.rules-content li { margin: 0.15rem 0; }
+.rules-content a { color: var(--brand-purple); text-decoration: underline; }
+.rules-content img { max-width: 100%; height: auto; border-radius: 0.6rem; margin: 0.5rem 0; }
+.rules-content blockquote { border-left: 3px solid #e5e7eb; padding-left: 0.8rem; color: #6b7280; margin: 0.5rem 0; }
+.rules-content hr { border: 0; border-top: 1px solid #e5e7eb; margin: 0.9rem 0; }
+.rules-content:empty::before { content: "Escreve aqui o regulamento…"; color: #9ca3af; }

@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: padelzone-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: padelzone
+      POSTGRES_PASSWORD: padelzone
+      POSTGRES_DB: padelzone
+    ports:
+      - "5433:5432"
+    volumes:
+      - padelzone_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U padelzone -d padelzone"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: padelzone-app
+    restart: unless-stopped
+    # Carrega o .env (AUTH_SECRET, credenciais Google, etc.); o DATABASE_URL abaixo
+    # tem prioridade e aponta para o serviço "db" dentro da rede do Docker.
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://padelzone:padelzone@db:5432/padelzone?schema=public"
+    ports:
+      # Aceder em http://localhost:7756 (container escuta na 3000).
+      - "7756:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Persiste os ficheiros carregados (logos/fotos) fora do container.
+      - ./public/uploads:/app/public/uploads
+
+volumes:
+  padelzone_pgdata:

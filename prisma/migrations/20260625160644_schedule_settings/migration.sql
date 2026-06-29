@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Competition" ADD COLUMN     "dayEnd" TEXT NOT NULL DEFAULT '23:00',
+ADD COLUMN     "dayStart" TEXT NOT NULL DEFAULT '18:00',
+ADD COLUMN     "matchDuration" INTEGER NOT NULL DEFAULT 75;

@@ -1,0 +1,527 @@
+// PadelZone — modelo de dados (MVP)
+// Postgres: usamos enum + jsonb nativos.
+// O coracao esta em Stage (esquema) + Match (jogo polimorfico) + Standing (classificacao).
+// Ver docs/tournament-engine.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------- Enums ----------------
+enum UserRole {
+  ADMIN
+  CLUB_OWNER
+  DIRECTOR
+  REFEREE
+  STAFF
+  PLAYER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  MIXED
+}
+
+enum EntryUnit {
+  PAIR
+  INDIVIDUAL
+}
+
+enum StageType {
+  GROUPS
+  KNOCKOUT
+  LEAGUE
+  LADDER
+  AMERICANO
+  MEXICANO
+  ROUND_ROBIN
+  KING_COURT
+}
+
+enum CompetitionStatus {
+  DRAFT
+  OPEN
+  ONGOING
+  FINISHED
+  CANCELLED
+}
+
+// Estado de aprovação do clube na plataforma (gerido pelo master/ADMIN).
+enum ClubStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum CategoryFormat {
+  KNOCKOUT
+  GROUPS
+  GROUPS_KNOCKOUT
+}
+
+enum MatchStatus {
+  PENDING
+  SCHEDULED
+  LIVE
+  DONE
+  WALKOVER
+}
+
+enum Side {
+  A
+  B
+}
+
+enum EntryStatus {
+  PENDING
+  CONFIRMED
+  WAITLIST
+  WITHDRAWN
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  MULTICAIXA_EXPRESS
+  REFERENCE
+  BANK_TRANSFER
+  UNITEL_MONEY
+  AFRICELL_MONEY
+  CASH
+}
+
+enum ChallengeStatus {
+  PENDING
+  ACCEPTED
+  PLAYED
+  EXPIRED
+  DECLINED
+}
+
+// ---------------- Tenancy / pessoas ----------------
+model Club {
+  id           Int      @id @default(autoincrement())
+  name         String
+  slug         String   @unique
+  city         String?
+  logoUrl      String?
+  brandColor   String?
+  description  String?
+  email        String?
+  phone        String?
+  address      String?
+  website      String?
+  instagram    String?
+  whatsapp     String?
+  mapsUrl      String?
+  services     String?
+  photos       String[] @default([])
+  status       ClubStatus @default(PENDING)
+  accessStart  DateTime?
+  accessEnd    DateTime?
+  approvedAt   DateTime?
+  paymentsEnabled  Boolean @default(false)
+  referenceEnabled Boolean @default(false)
+  expressEnabled   Boolean @default(false)
+  proxypaySandbox  Boolean @default(true)
+  proxypayEntityId String?
+  proxypayApiKey   String?
+  mcxPosId         Int?
+  mcxExpressToken  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  users        ClubUser[]
+  courts       Court[]
+  competitions Competition[]
+  players      Player[]
+  payments     Payment[]
+  categoryTemplates ClubCategory[]
+  messages     Message[]
+  invites      ClubInvite[]
+}
+
+model ClubCategory {
+  id      Int       @id @default(autoincrement())
+  clubId  Int
+  code    String
+  label   String
+  gender  Gender
+  unit    EntryUnit @default(PAIR)
+  order   Int       @default(0)
+  club    Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, code])
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  phone     String?
+  password  String
+  role      UserRole @default(PLAYER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  clubs     ClubUser[]
+  player    Player?
+}
+
+model ClubUser {
+  id     Int      @id @default(autoincrement())
+  clubId Int
+  userId Int
+  role   UserRole
+  club   Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, userId])
+}
+
+model Court {
+  id      Int    @id @default(autoincrement())
+  clubId  Int
+  name    String
+  club    Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  matches Match[]
+}
+
+model Player {
+  id            Int      @id @default(autoincrement())
+  clubId        Int?
+  userId        Int?     @unique
+  name          String
+  gender        Gender?
+  email         String?
+  phone         String?
+  shirtSize     String?
+  bio           String?
+  city          String?
+  photoUrl      String?
+  rankingPoints Int      @default(0)
+  invitePending Boolean  @default(false) // parceiro convidado ao inscrever, ainda sem conta própria
+  createdAt     DateTime @default(now())
+  club             Club?  @relation(fields: [clubId], references: [id])
+  user             User?  @relation(fields: [userId], references: [id])
+  teamsAsP1        Team[] @relation("p1")
+  teamsAsP2        Team[] @relation("p2")
+  entries          Entry[]
+  matchSidePlayers MatchSidePlayer[]
+  messages         MessageRecipient[]
+}
+
+model Team {
+  id        Int     @id @default(autoincrement())
+  name      String?
+  player1Id Int
+  player2Id Int?
+  player1   Player  @relation("p1", fields: [player1Id], references: [id])
+  player2   Player? @relation("p2", fields: [player2Id], references: [id])
+  entries   Entry[]
+  sides     MatchSide[]
+}
+
+// ---------------- Competicao ----------------
+model Competition {
+  id          Int      @id @default(autoincrement())
+  clubId      Int
+  name        String
+  slug        String
+  status      CompetitionStatus @default(DRAFT)
+  startDate   DateTime?
+  endDate     DateTime?
+  regOpenAt   DateTime?
+  regCloseAt  DateTime?
+  description String?
+  imageUrl    String?
+  matchDuration Int    @default(75)
+  dayStart      String @default("18:00")
+  dayEnd        String @default("23:00")
+  weekdayStart  String @default("17:30")
+  weekdayEnd    String @default("23:00")
+  weekendStart  String @default("08:00")
+  weekendEnd    String @default("23:00")
+  femaleLatestStart String?
+  rules       String?
+  createdAt   DateTime @default(now())
+  club        Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  categories  Category[]
+  payments    Payment[]
+  attachments CompetitionAttachment[]
+
+  @@unique([clubId, slug])
+}
+
+// Anexos do regulamento do torneio (PDF/imagens).
+model CompetitionAttachment {
+  id            Int      @id @default(autoincrement())
+  competitionId Int
+  name          String
+  url           String
+  createdAt     DateTime @default(now())
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@index([competitionId])
+}
+
+model Category {
+  id            Int       @id @default(autoincrement())
+  competitionId Int
+  name          String
+  gender        Gender
+  unit          EntryUnit
+  maxEntries    Int?
+  price         Decimal?  @db.Decimal(12, 2)
+  format             CategoryFormat @default(KNOCKOUT)
+  numGroups          Int            @default(2)
+  qualifiersPerGroup Int            @default(2)
+  useSeeds           Boolean        @default(true)
+  latestStart        String?
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  stages        Stage[]
+  entries       Entry[]
+}
+
+model Stage {
+  id         Int       @id @default(autoincrement())
+  categoryId Int
+  order      Int
+  name       String
+  type       StageType
+  config     Json
+  category   Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  groups     Group[]
+  matches    Match[]
+  standings  Standing[]
+  challenges Challenge[]
+}
+
+model Group {
+  id      Int    @id @default(autoincrement())
+  stageId Int
+  name    String
+  stage   Stage  @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  members GroupEntry[]
+  matches Match[]
+}
+
+model Entry {
+  id         Int         @id @default(autoincrement())
+  categoryId Int
+  teamId     Int?
+  playerId   Int?
+  seed       Int?
+  status     EntryStatus @default(PENDING)
+  unavailable Json?
+  createdAt  DateTime    @default(now())
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  team       Team?    @relation(fields: [teamId], references: [id])
+  player     Player?  @relation(fields: [playerId], references: [id])
+  groupLinks GroupEntry[]
+  standings  Standing[]
+  payments   Payment[]
+}
+
+model GroupEntry {
+  id      Int   @id @default(autoincrement())
+  groupId Int
+  entryId Int
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  entry   Entry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, entryId])
+}
+
+// ---------------- Jogos ----------------
+model Match {
+  id               Int       @id @default(autoincrement())
+  stageId          Int
+  groupId          Int?
+  round            Int
+  slotInRound      Int       @default(0)
+  courtId          Int?
+  scheduledAt      DateTime?
+  status           MatchStatus @default(PENDING)
+  nextMatchId      Int?
+  loserNextMatchId Int?
+  stage          Stage   @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  group          Group?  @relation(fields: [groupId], references: [id])
+  court          Court?  @relation(fields: [courtId], references: [id])
+  nextMatch      Match?  @relation("winnerTo", fields: [nextMatchId], references: [id])
+  feedsWinner    Match[] @relation("winnerTo")
+  loserNextMatch Match?  @relation("loserTo", fields: [loserNextMatchId], references: [id])
+  feedsLoser     Match[] @relation("loserTo")
+  sides          MatchSide[]
+  result         MatchResult?
+}
+
+model MatchSide {
+  id      Int     @id @default(autoincrement())
+  matchId Int
+  side    Side
+  teamId  Int?
+  label   String?
+  match   Match   @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  team    Team?   @relation(fields: [teamId], references: [id])
+  players MatchSidePlayer[]
+
+  @@unique([matchId, side])
+}
+
+model MatchSidePlayer {
+  id          Int       @id @default(autoincrement())
+  matchSideId Int
+  playerId    Int
+  matchSide   MatchSide @relation(fields: [matchSideId], references: [id], onDelete: Cascade)
+  player      Player    @relation(fields: [playerId], references: [id])
+}
+
+model MatchResult {
+  id            Int      @id @default(autoincrement())
+  matchId       Int      @unique
+  winnerSide    Side?
+  score         Json
+  submittedById Int?
+  confirmedById Int?
+  createdAt     DateTime @default(now())
+  match         Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+}
+
+model Standing {
+  id           Int   @id @default(autoincrement())
+  stageId      Int
+  groupId      Int?
+  entryId      Int
+  rank         Int   @default(0)
+  played       Int   @default(0)
+  won          Int   @default(0)
+  lost         Int   @default(0)
+  setsFor      Int   @default(0)
+  setsAgainst  Int   @default(0)
+  gamesFor     Int   @default(0)
+  gamesAgainst Int   @default(0)
+  points       Int   @default(0)
+  stage        Stage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  entry        Entry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@unique([stageId, entryId])
+}
+
+model Challenge {
+  id                Int      @id @default(autoincrement())
+  stageId           Int
+  challengerEntryId Int
+  defenderEntryId   Int
+  status            ChallengeStatus @default(PENDING)
+  matchId           Int?
+  expiresAt         DateTime?
+  createdAt         DateTime @default(now())
+  stage             Stage    @relation(fields: [stageId], references: [id], onDelete: Cascade)
+}
+
+// ---------------- Pagamentos (Angola) ----------------
+model Payment {
+  id            Int      @id @default(autoincrement())
+  clubId        Int
+  competitionId Int?
+  entryId       Int?
+  amount        Decimal  @db.Decimal(12, 2)
+  currency      String   @default("AOA")
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  reference     String?
+  proofUrl      String?
+  externalId    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  club          Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  competition   Competition? @relation(fields: [competitionId], references: [id])
+  entry         Entry?       @relation(fields: [entryId], references: [id])
+}
+
+// ---------------- Mensagens (clube -> jogadores) ----------------
+model Message {
+  id            Int      @id @default(autoincrement())
+  clubId        Int
+  senderUserId  Int?
+  competitionId Int?
+  audienceLabel String
+  subject       String
+  body          String
+  createdAt     DateTime @default(now())
+  club          Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  recipients    MessageRecipient[]
+}
+
+model MessageRecipient {
+  id        Int       @id @default(autoincrement())
+  messageId Int
+  playerId  Int
+  readAt    DateTime?
+  message   Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  player    Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, playerId])
+  @@index([playerId])
+}
+
+// ---------------- Contacto (formulário público) ----------------
+model ContactMessage {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  handled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ---------------- Plataforma (gerido pelo master/ADMIN) ----------------
+// Definições globais da plataforma (singleton, id=1). Inclui o SMTP para envio de email.
+model PlatformSettings {
+  id            Int      @id @default(1)
+  smtpHost      String?
+  smtpPort      Int?
+  smtpSecure    Boolean  @default(false)
+  smtpUser      String?
+  smtpPassword  String?
+  smtpFromName  String?
+  smtpFromEmail String?
+  wesenderApiKey String?
+  updatedAt     DateTime @updatedAt
+}
+
+// Convite de membro de clube por email (aceite ao registar com o token).
+model ClubInvite {
+  id         Int       @id @default(autoincrement())
+  clubId     Int
+  email      String
+  role       UserRole
+  token      String    @unique
+  createdAt  DateTime  @default(now())
+  acceptedAt DateTime?
+  club       Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@index([clubId])
+}
+
+// Patrocinadores mostrados na página inicial pública.
+model Sponsor {
+  id        Int      @id @default(autoincrement())
+  name      String
+  logoUrl   String
+  url       String?
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}

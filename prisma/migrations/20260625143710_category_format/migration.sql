@@ -1,0 +1,8 @@
+-- CreateEnum
+CREATE TYPE "CategoryFormat" AS ENUM ('KNOCKOUT', 'GROUPS', 'GROUPS_KNOCKOUT');
+
+-- AlterTable
+ALTER TABLE "Category" ADD COLUMN     "format" "CategoryFormat" NOT NULL DEFAULT 'KNOCKOUT',
+ADD COLUMN     "numGroups" INTEGER NOT NULL DEFAULT 2,
+ADD COLUMN     "qualifiersPerGroup" INTEGER NOT NULL DEFAULT 2,
+ADD COLUMN     "useSeeds" BOOLEAN NOT NULL DEFAULT true;

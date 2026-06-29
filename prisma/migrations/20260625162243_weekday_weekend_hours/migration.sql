@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Competition" ADD COLUMN     "weekdayEnd" TEXT NOT NULL DEFAULT '23:00',
+ADD COLUMN     "weekdayStart" TEXT NOT NULL DEFAULT '17:30',
+ADD COLUMN     "weekendEnd" TEXT NOT NULL DEFAULT '23:00',
+ADD COLUMN     "weekendStart" TEXT NOT NULL DEFAULT '08:00';
