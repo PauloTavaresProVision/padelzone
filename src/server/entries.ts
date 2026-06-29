@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
+import { sortCategories } from "@/lib/category-order";
 
-export function getOpenCompetitions() {
-  return prisma.competition.findMany({
+export async function getOpenCompetitions() {
+  const comps = await prisma.competition.findMany({
     where: { status: "OPEN" },
     include: {
       club: true,
@@ -9,6 +10,8 @@ export function getOpenCompetitions() {
     },
     orderBy: { startDate: "asc" },
   });
+  for (const c of comps) c.categories = sortCategories(c.categories);
+  return comps;
 }
 
 export function getCompetitionEntries(competitionId: number) {

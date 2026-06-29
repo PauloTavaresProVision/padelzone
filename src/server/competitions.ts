@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { sortCategories } from "@/lib/category-order";
 
 export function getClubCompetitions(clubId: number) {
   return prisma.competition.findMany({
@@ -8,8 +9,8 @@ export function getClubCompetitions(clubId: number) {
   });
 }
 
-export function getCompetition(id: number) {
-  return prisma.competition.findUnique({
+export async function getCompetition(id: number) {
+  const comp = await prisma.competition.findUnique({
     where: { id },
     include: {
       club: true,
@@ -20,4 +21,6 @@ export function getCompetition(id: number) {
       attachments: { orderBy: { id: "asc" } },
     },
   });
+  if (comp) comp.categories = sortCategories(comp.categories);
+  return comp;
 }
