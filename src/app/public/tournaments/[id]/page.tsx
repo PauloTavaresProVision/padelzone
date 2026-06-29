@@ -97,7 +97,7 @@ function GroupsFromStage({ stage, qualifyCount }: { stage: Stage; qualifyCount: 
     standings: stage.standings.filter((s) => s.groupId === g.id).map((s) => ({ name: entryName(s.entry), played: s.played, won: s.won, lost: s.lost, gamesFor: s.gamesFor, gamesAgainst: s.gamesAgainst, points: s.points })).sort((a, b) => (b.played ? b.won / b.played : 0) - (a.played ? a.won / a.played : 0) || (b.gamesFor - b.gamesAgainst) - (a.gamesFor - a.gamesAgainst)),
     matches: stage.matches.filter((m) => m.groupId === g.id).map((m) => ({ round: m.round, a: sideName(m.sides.find((s) => s.side === "A")!), b: sideName(m.sides.find((s) => s.side === "B")!) })),
   }));
-  return <GroupsView groups={blocks} qualifyCount={qualifyCount} />;
+  return <GroupsView groups={blocks} qualifyCount={qualifyCount} compact />;
 }
 
 export default async function PublicTournamentPage({

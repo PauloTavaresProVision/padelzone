@@ -8,8 +8,36 @@ function splitPair(name: string): [string, string | null] {
   return i === -1 ? [name, null] : [name.slice(0, i), name.slice(i + 3)];
 }
 
-export function GroupsView({ groups, qualifyCount = 0 }: { groups: GroupBlock[]; qualifyCount?: number }) {
+export function GroupsView({ groups, qualifyCount = 0, compact = false }: { groups: GroupBlock[]; qualifyCount?: number; compact?: boolean }) {
   if (groups.length === 0) return <p className="text-sm text-soft">Sem grupos.</p>;
+
+  // Versão compacta (pública/mobile): só posição, nomes e pontos. Nomes legíveis.
+  if (compact) {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {groups.map((group) => (
+          <div key={group.name} className="overflow-hidden rounded-2xl border border-line bg-surface">
+            <div className="flex items-center justify-between border-b border-line bg-surface-soft/60 px-4 py-3">
+              <h3 className="text-sm font-bold text-zinc-900">{group.name}</h3>
+              {qualifyCount > 0 && <span className="rounded-full bg-success-bg px-2 py-0.5 text-[11px] font-semibold text-success">apuram-se {qualifyCount}</span>}
+            </div>
+            <ul>
+              {group.standings.map((s, i) => {
+                const qual = qualifyCount > 0 && i < qualifyCount;
+                const best = !qual && !!s.best;
+                return (
+                  <li key={s.name} className={`flex items-center gap-2.5 border-t border-line px-4 py-3 first:border-t-0 ${qual ? "bg-success-bg/30" : best ? "bg-warning-bg/30" : ""}`}>
+                    <span className={`grid size-6 shrink-0 place-items-center rounded-md text-xs font-bold ${qual ? "bg-success text-white" : best ? "bg-warning text-white" : "bg-surface-soft text-muted"}`}>{i + 1}</span>
+                    <span className="text-sm font-medium text-zinc-900">{s.name}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
