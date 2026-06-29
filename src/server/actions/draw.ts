@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSessionUserId } from "@/lib/auth";
-import { persistKnockout, persistGroups, persistKnockoutSkeleton, persistQualifiersFlexible, clearStages } from "@/server/draw-engine";
+import { persistKnockout, persistGroups, persistQualifiersFlexible, clearStages } from "@/server/draw-engine";
 
 const MANAGER_ROLES = ["CLUB_OWNER", "DIRECTOR", "STAFF"];
 
@@ -34,13 +34,9 @@ export async function launchDraw(formData: FormData) {
   if (cat.format === "KNOCKOUT") {
     await persistKnockout(categoryId, cat.useSeeds);
   } else {
-    // GROUPS e GROUPS_KNOCKOUT começam pela fase de grupos.
+    // GROUPS e GROUPS_KNOCKOUT começam SÓ pela fase de grupos. O quadro de playoffs é
+    // gerado DEPOIS dos grupos, com os apurados reais (como no PadelTeams: "Configurar").
     await persistGroups(categoryId, cat.numGroups, cat.useSeeds);
-    if (cat.format === "GROUPS_KNOCKOUT") {
-      const confirmed = await prisma.entry.count({ where: { categoryId, status: "CONFIRMED" } });
-      const qualifiers = Math.min(confirmed, cat.numGroups * cat.qualifiersPerGroup);
-      if (qualifiers >= 2) await persistKnockoutSkeleton(categoryId, qualifiers, 1, "Quadro final");
-    }
   }
   revalidate();
 }
