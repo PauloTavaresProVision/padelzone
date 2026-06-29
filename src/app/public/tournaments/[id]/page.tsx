@@ -277,6 +277,8 @@ export default async function PublicTournamentPage({
             {/* ---- Categorias (1 de cada vez) ---- */}
             {tab === "categorias" && (() => {
               const cat = comp.categories.find((c) => c.name === selCat);
+              const entry = cats.find((c) => c.cat.name === selCat);
+              const groupStages = (entry?.stages ?? []).filter((s) => s.type === "GROUPS");
               const list = cat ? entriesByCat.get(cat.id) ?? [] : [];
               const avail = cat?.maxEntries ? Math.max(0, cat.maxEntries - cat._count.entries) : null;
               return (
@@ -295,7 +297,13 @@ export default async function PublicTournamentPage({
                         </div>
                       </div>
                       <div className="p-5">
-                        {list.length === 0 ? (
+                        {groupStages.length > 0 ? (
+                          <div className="space-y-4">
+                            {groupStages.map((s) => (
+                              <GroupsFromStage key={s.id} stage={s} qualifyCount={cat.format === "GROUPS_KNOCKOUT" ? cat.qualifiersPerGroup : 0} />
+                            ))}
+                          </div>
+                        ) : list.length === 0 ? (
                           <p className="py-6 text-center text-sm text-muted">{t("Ainda não há duplas inscritas nesta categoria.")}</p>
                         ) : (
                           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
