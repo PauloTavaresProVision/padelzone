@@ -66,6 +66,8 @@ export async function createCompetition(_prev: CompState, formData: FormData): P
       status: "DRAFT",
       startDate: toDate(formData.get("startDate")),
       endDate: toDate(formData.get("endDate")),
+      regOpenAt: toDate(formData.get("regOpenAt")),
+      regCloseAt: toDate(formData.get("regCloseAt")),
       applRanked: formData.get("applRanked") === "on",
       applType: (formData.get("applRanked") === "on" && String(formData.get("applType") ?? "").trim()) || null,
     },
@@ -74,12 +76,18 @@ export async function createCompetition(_prev: CompState, formData: FormData): P
   const imageUrl = await saveImage(formData.get("image"), "competitions");
   if (imageUrl) await prisma.competition.update({ where: { id: comp.id }, data: { imageUrl } });
 
+  const maxEntries = Number(formData.get("maxEntries")) || null;
+  const fmt = String(formData.get("format") ?? "KNOCKOUT");
+  const format = (["KNOCKOUT", "GROUPS", "GROUPS_KNOCKOUT"].includes(fmt) ? fmt : "KNOCKOUT") as never;
+  const numGroups = Math.max(1, Number(formData.get("numGroups")) || 2);
+  const qualifiersPerGroup = Math.max(1, Number(formData.get("qualifiersPerGroup")) || 2);
+
   const templateIds = formData.getAll("templateIds").map((v) => Number(v)).filter((n) => n > 0);
   if (templateIds.length) {
     const templates = await prisma.clubCategory.findMany({ where: { id: { in: templateIds }, clubId } });
     if (templates.length) {
       await prisma.category.createMany({
-        data: templates.map((t) => ({ competitionId: comp.id, name: t.code, gender: t.gender, unit: t.unit })),
+        data: templates.map((t) => ({ competitionId: comp.id, name: t.code, gender: t.gender, unit: t.unit, maxEntries, format, numGroups, qualifiersPerGroup })),
       });
     }
   }
