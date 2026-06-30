@@ -217,6 +217,13 @@ export default async function SorteioPage({
           }
         }
         const defaultQ = Math.min(confirmed, cat.numGroups * cat.qualifiersPerGroup);
+        // Recomendado: o quadro "cheio" mais próximo (potência de 2, sem isentos), conforme o nº de duplas.
+        const recommendedQ = (() => {
+          const base = Math.max(2, defaultQ);
+          const up = 1 << Math.ceil(Math.log2(base));
+          const down = 1 << Math.floor(Math.log2(base));
+          return up <= confirmed ? up : Math.min(down, confirmed);
+        })();
         const qualSizes = (() => {
           const g = cat.numGroups;
           // Descreve a composição do quadro: "X de cada grupo (+ R melhores (X+1)ºs)".
@@ -230,8 +237,12 @@ export default async function SorteioPage({
           const m = new Map<number, string>();
           for (const s of [4, 8, 16, 32]) if (s >= 2 && s <= confirmed) m.set(s, `${describe(s)} (${s})`);
           if (defaultQ >= 2) m.set(defaultQ, `${describe(defaultQ)} (${defaultQ})`);
+          if (recommendedQ >= 2) m.set(recommendedQ, `${describe(recommendedQ)} (${recommendedQ})`);
           if (confirmed >= 2) m.set(confirmed, `Todas (${confirmed})`);
-          return [...m.entries()].filter(([v]) => v >= 2).sort((a, b) => a[0] - b[0]);
+          return [...m.entries()]
+            .filter(([v]) => v >= 2)
+            .sort((a, b) => a[0] - b[0])
+            .map(([v, l]) => [v, v === recommendedQ ? `${l} · recomendado` : l] as [number, string]);
         })();
 
         // Campeão (final das eliminatórias concluída)
@@ -363,7 +374,7 @@ export default async function SorteioPage({
                         <Trophy className="size-6 text-brand-purple" />
                         <div className="flex flex-col items-center gap-1.5">
                           <label className="text-sm font-medium text-zinc-900">Quantas duplas apuram para o quadro final?</label>
-                          <select name="size" defaultValue={defaultQ} className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-zinc-900 focus:border-brand-purple focus:outline-none">
+                          <select name="size" defaultValue={recommendedQ} className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-zinc-900 focus:border-brand-purple focus:outline-none">
                             {qualSizes.map(([v, l]) => (
                               <option key={v} value={v}>{l}</option>
                             ))}
