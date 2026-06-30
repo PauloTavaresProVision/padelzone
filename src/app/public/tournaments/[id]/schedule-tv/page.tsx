@@ -75,86 +75,75 @@ export default async function ScheduleTvPage({
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=10&data=${encodeURIComponent(publicUrl)}`;
 
   return (
-    <div className="flex min-h-screen flex-col bg-app">
+    <div className="flex min-h-screen flex-col bg-zinc-950 text-white">
       {/* Cabeçalho */}
-      <header className="pz-gradient flex items-center justify-between gap-4 px-8 py-5 text-white">
-        <div className="flex items-center gap-4">
-          <div className="grid place-items-center rounded-2xl bg-white px-4 py-2.5">
+      <header className="flex items-center justify-between gap-6 bg-gradient-to-r from-brand-purple to-violet-700 px-10 py-6">
+        <div className="flex items-center gap-5">
+          <div className="grid place-items-center rounded-2xl bg-white px-4 py-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/padelzone-logo.png" alt="PadelZone" className="h-7" />
+            <img src="/padelzone-logo.png" alt="PadelZone" className="h-8" />
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold leading-tight">{comp.name}</h1>
-            <p className="text-white/80">
-              {comp.club.name}
-              {comp.club.city ? ` · ${comp.club.city}` : ""}
-            </p>
+            <h1 className="text-4xl font-black leading-none tracking-tight">{comp.name}</h1>
+            <p className="mt-1.5 text-lg text-white/75">{comp.club.name}{comp.club.city ? ` · ${comp.club.city}` : ""}</p>
           </div>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           <div className="text-right">
-            <p className="text-xl font-bold capitalize leading-tight">{selDay ? fmtDay(selDay) : "—"}</p>
-            <p className="text-sm text-white/70">Calendário ao vivo</p>
+            <p className="text-3xl font-extrabold capitalize leading-none">{selDay ? fmtDay(selDay) : "—"}</p>
+            <p className="mt-1.5 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-white/70">
+              <span className="size-2.5 animate-pulse rounded-full bg-emerald-400" /> Ao vivo
+            </p>
           </div>
           <TvControls refreshSeconds={45} />
         </div>
       </header>
 
       {/* Grelha campo × hora */}
-      <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 overflow-auto p-8">
         {dayGames.length === 0 ? (
           <div className="grid h-full place-items-center">
             <div className="text-center">
-              <p className="text-2xl font-bold text-zinc-900">Sem jogos agendados</p>
-              <p className="mt-1 text-muted">Assim que o calendário for gerado, aparece aqui.</p>
+              <p className="text-4xl font-black text-white">Sem jogos agendados</p>
+              <p className="mt-2 text-xl text-white/50">Assim que o calendário for gerado, aparece aqui.</p>
             </div>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+          <div className="overflow-hidden rounded-3xl border border-white/10">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-surface-soft">
-                  <th className="sticky left-0 z-10 w-20 border-b border-r border-line bg-surface-soft p-3 text-sm font-bold text-soft">Hora</th>
+                <tr>
+                  <th className="sticky left-0 z-10 w-24 border-b border-white/10 bg-zinc-900 p-4 text-sm font-bold uppercase tracking-wider text-white/40">Hora</th>
                   {courtList.map((c) => (
-                    <th key={c.id} className="min-w-[220px] border-b border-l border-line p-3 text-center text-lg font-extrabold text-zinc-900">
-                      {c.name}
-                    </th>
+                    <th key={c.id} className="min-w-[240px] border-b border-l border-white/10 bg-zinc-900 p-4 text-center text-2xl font-black text-white">{c.name}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {times.map((tk) => (
+                {times.map((tk, ri) => (
                   <tr key={tk} className="align-top">
-                    <td className="sticky left-0 z-10 border-r border-t border-line bg-surface p-3 text-lg font-bold text-zinc-900">{tk}</td>
+                    <td className={`sticky left-0 z-10 border-t border-white/10 p-4 text-center text-3xl font-black text-white ${ri % 2 ? "bg-zinc-900/60" : "bg-zinc-900"}`}>{tk}</td>
                     {courtList.map((c) => {
                       const g = cell(c.id, tk);
-                      if (!g) return <td key={c.id} className="border-l border-t border-line p-2" />;
+                      if (!g) return <td key={c.id} className={`border-l border-t border-white/10 ${ri % 2 ? "bg-zinc-900/20" : "bg-zinc-950"}`} />;
                       const live = g.status === "LIVE";
                       const done = g.status === "DONE";
-                      const setsStr = g.sets?.map((s) => `${s.a}-${s.b}`).join("  ") ?? "";
                       return (
-                        <td key={c.id} className="border-l border-t border-line p-2">
-                          <div
-                            className={`rounded-xl border-l-4 p-3 ${
-                              live
-                                ? "border-danger bg-danger-bg"
-                                : done
-                                  ? "border-success bg-success-bg"
-                                  : "border-brand-purple bg-primary-light"
-                            }`}
-                          >
-                            <div className="mb-1 flex items-center justify-between gap-2">
-                              <span className="text-sm font-bold text-brand-purple">{g.cat} · {g.section}</span>
-                              {live && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-danger px-2 py-0.5 text-[11px] font-bold uppercase text-white">
-                                  <span className="size-1.5 animate-pulse rounded-full bg-white" /> Ao vivo
-                                </span>
-                              )}
-                              {done && <span className="rounded-full bg-success px-2 py-0.5 text-[11px] font-bold uppercase text-white">Final</span>}
+                        <td key={c.id} className={`border-l border-t border-white/10 p-2.5 ${ri % 2 ? "bg-zinc-900/20" : "bg-zinc-950"}`}>
+                          <div className={`rounded-2xl border p-4 ${live ? "border-rose-500/60 bg-rose-500/15 shadow-[0_0_30px_-8px_rgba(244,63,94,0.6)]" : done ? "border-emerald-500/40 bg-emerald-500/10" : "border-white/10 bg-white/5"}`}>
+                            <div className="mb-2.5 flex items-center justify-between gap-2">
+                              <span className="rounded-md bg-violet-500/25 px-2 py-0.5 text-sm font-bold text-violet-200">{g.cat} · {g.section}</span>
+                              {live && <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500 px-2.5 py-0.5 text-xs font-black uppercase"><span className="size-2 animate-pulse rounded-full bg-white" /> Ao vivo</span>}
+                              {done && <span className="rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-black uppercase">Terminado</span>}
                             </div>
-                            <p className={`truncate text-lg ${done && g.winner === "A" ? "font-extrabold text-zinc-900" : "font-medium text-zinc-800"}`}>{g.nameA}</p>
-                            <p className={`truncate text-lg ${done && g.winner === "B" ? "font-extrabold text-zinc-900" : "font-medium text-zinc-800"}`}>{g.nameB}</p>
-                            {done && setsStr && <p className="mt-1 font-mono text-base font-bold tabular-nums text-success">{setsStr}</p>}
+                            <p className={`flex items-center justify-between gap-3 text-2xl ${done && g.winner === "A" ? "font-black text-white" : done ? "text-white/45" : "font-semibold text-white/90"}`}>
+                              <span className="truncate">{g.nameA}</span>
+                              {done && g.sets && <span className="shrink-0 font-mono tabular-nums">{g.sets.map((s) => s.a).join(" ")}</span>}
+                            </p>
+                            <p className={`mt-1.5 flex items-center justify-between gap-3 text-2xl ${done && g.winner === "B" ? "font-black text-white" : done ? "text-white/45" : "font-semibold text-white/90"}`}>
+                              <span className="truncate">{g.nameB}</span>
+                              {done && g.sets && <span className="shrink-0 font-mono tabular-nums">{g.sets.map((s) => s.b).join(" ")}</span>}
+                            </p>
                           </div>
                         </td>
                       );
@@ -168,33 +157,27 @@ export default async function ScheduleTvPage({
       </main>
 
       {/* Rodapé com QR */}
-      <footer className="flex items-center justify-between gap-4 border-t border-line bg-surface px-8 py-4">
-        <div className="flex items-center gap-3">
+      <footer className="flex items-center justify-between gap-4 border-t border-white/10 bg-zinc-900 px-10 py-5">
+        <div className="flex items-center gap-4">
           {days.length > 1 && (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {days.map((d) => (
                 <a
                   key={d}
                   href={`?day=${d}`}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold capitalize transition ${
-                    d === selDay ? "pz-gradient text-white" : "bg-surface-soft text-muted hover:text-zinc-900"
-                  }`}
+                  className={`rounded-xl px-4 py-2 text-base font-bold capitalize transition ${d === selDay ? "bg-brand-purple text-white" : "bg-white/5 text-white/60 hover:text-white"}`}
                 >
                   {new Intl.DateTimeFormat("pt-PT", { timeZone: "UTC", weekday: "short", day: "2-digit" }).format(new Date(d + "T12:00:00Z"))}
                 </a>
               ))}
             </div>
           )}
-          <p className="text-sm text-soft">Atualiza automaticamente</p>
+          <p className="text-sm text-white/40">Atualiza automaticamente</p>
         </div>
-        <div className="flex items-center gap-3">
-          <p className="text-right text-sm font-medium text-muted">
-            Segue o torneio
-            <br />
-            no telemóvel
-          </p>
+        <div className="flex items-center gap-4">
+          <p className="text-right text-base font-semibold text-white/70">Segue o torneio<br />no telemóvel</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qr} alt="QR" className="size-16 rounded-lg border border-line bg-white p-1" />
+          <img src={qr} alt="QR" className="size-20 rounded-xl bg-white p-1.5" />
         </div>
       </footer>
     </div>
