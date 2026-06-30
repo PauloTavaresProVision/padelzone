@@ -66,6 +66,8 @@ export async function createCompetition(_prev: CompState, formData: FormData): P
       status: "DRAFT",
       startDate: toDate(formData.get("startDate")),
       endDate: toDate(formData.get("endDate")),
+      applRanked: formData.get("applRanked") === "on",
+      applType: (formData.get("applRanked") === "on" && String(formData.get("applType") ?? "").trim()) || null,
     },
   });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Plus } from "lucide-react";
 import { createCompetition } from "@/server/actions/competitions";
 import { GENDER_LABEL } from "@/lib/categories";
@@ -21,6 +21,7 @@ export function CreateCompetitionForm({
   templates: Template[];
 }) {
   const [state, action, pending] = useActionState(createCompetition, null);
+  const [ranked, setRanked] = useState(false);
 
   const groups = GENDER_ORDER.map((gender) => ({
     gender,
@@ -69,6 +70,27 @@ export function CreateCompetitionForm({
             accept="image/*"
             className="block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-purple/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-purple dark:text-zinc-300"
           />
+        </div>
+
+        <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+          <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <input type="checkbox" name="applRanked" checked={ranked} onChange={(e) => setRanked(e.target.checked)} className="size-4 accent-brand-purple" />
+            Conta para o ranking oficial APPL
+          </label>
+          {ranked && (
+            <div className="mt-3">
+              <label className={labelCls}>Tipo de prova</label>
+              <select name="applType" defaultValue="OPEN_2000" className={fieldCls}>
+                <option value="OPEN_2000">Open · Classe 2.000</option>
+                <option value="OPEN_5000">Open · Classe 5.000</option>
+                <option value="OPEN_10000">Open · Classe 10.000</option>
+                <option value="CAMPEONATO">Campeonato (10.000)</option>
+                <option value="MASTERS">Masters</option>
+                <option value="LIGA">Liga de Clubes</option>
+              </select>
+              <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">Provas oficiais (Open, Campeonato, Masters, Liga) contam para o ranking. Sociais/amigáveis não.</p>
+            </div>
+          )}
         </div>
 
         <div>

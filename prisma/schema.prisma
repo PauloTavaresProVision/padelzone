@@ -253,6 +253,8 @@ model Competition {
   weekendEnd    String @default("23:00")
   femaleLatestStart String?
   rules       String?
+  applRanked  Boolean  @default(false) // conta para o ranking oficial APPL
+  applType    String?                  // tipo de prova APPL (Open 2.000/5.000/10.000, Campeonato, Masters, Liga)
   createdAt   DateTime @default(now())
   club        Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
   categories  Category[]
