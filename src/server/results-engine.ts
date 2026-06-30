@@ -8,6 +8,11 @@ export async function submitMatchResult(matchId: number, sets: SetScore[]) {
   const match = await prisma.match.findUnique({ where: { id: matchId }, include: { sides: { include: { players: true } } } });
   if (!match) throw new Error("Jogo não encontrado.");
   if (sets.length === 0) throw new Error("Indica pelo menos um set.");
+  for (const s of sets) {
+    if (![s.a, s.b].every((n) => Number.isInteger(n) && n >= 0 && n <= 30)) {
+      throw new Error("Resultado inválido. Cada set/super tie-break vai de 0 a 30.");
+    }
+  }
 
   const { setsA, setsB, gamesA, gamesB } = tallyGames(sets);
   if (setsA === setsB) throw new Error("O resultado tem de ter um vencedor.");

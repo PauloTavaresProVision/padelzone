@@ -156,7 +156,7 @@ function GameCard({ g }: { g: Game }) {
             <span className="truncate">{g.nameA}</span>
           </span>
           {[1, 2, 3].map((i) => (
-            <input key={i} type="number" inputMode="numeric" min={0} name={`s${i}a`} defaultValue={g.sets[i - 1]?.a ?? ""} disabled={!ready} className={setBox} />
+            <input key={i} type="number" inputMode="numeric" min={0} max={30} name={`s${i}a`} defaultValue={g.sets[i - 1]?.a ?? ""} disabled={!ready} className={setBox} />
           ))}
         </div>
 
@@ -167,7 +167,7 @@ function GameCard({ g }: { g: Game }) {
             <span className="truncate">{g.nameB}</span>
           </span>
           {[1, 2, 3].map((i) => (
-            <input key={i} type="number" inputMode="numeric" min={0} name={`s${i}b`} defaultValue={g.sets[i - 1]?.b ?? ""} disabled={!ready} className={setBox} />
+            <input key={i} type="number" inputMode="numeric" min={0} max={30} name={`s${i}b`} defaultValue={g.sets[i - 1]?.b ?? ""} disabled={!ready} className={setBox} />
           ))}
         </div>
 
