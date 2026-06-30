@@ -30,6 +30,20 @@ export async function lookupPhone(phone: string): Promise<{ id: number; name: st
   return hit ? { id: hit.id, name: hit.name } : null;
 }
 
+// Um jogador só joga UMA categoria de género (M/F) por torneio; os mistos são à parte.
+// Devolve a outra inscrição não-mista do jogador neste torneio, se existir.
+async function otherGenderEntry(playerId: number, competitionId: number, exceptCategoryId: number) {
+  return prisma.entry.findFirst({
+    where: {
+      categoryId: { not: exceptCategoryId },
+      category: { competitionId, gender: { not: "MIXED" } },
+      status: { in: ["PENDING", "CONFIRMED", "WAITLIST"] },
+      OR: [{ playerId }, { team: { OR: [{ player1Id: playerId }, { player2Id: playerId }] } }],
+    },
+    include: { category: { select: { name: true } } },
+  });
+}
+
 // ---- Inscrição do próprio jogador (com sessão) ----
 export async function registerSelf(_prev: EntryState, formData: FormData): Promise<EntryState> {
   const userId = await getSessionUserId();
@@ -72,6 +86,12 @@ export async function registerSelf(_prev: EntryState, formData: FormData): Promi
   });
   if (dup) return { error: "Já estás inscrito nesta categoria." };
 
+  // Só uma categoria de género (M/F) por torneio; os mistos são a exceção.
+  if (category.gender !== "MIXED") {
+    const mine = await otherGenderEntry(me.id, comp.id, categoryId);
+    if (mine) return { error: `Já estás inscrito em ${mine.category.name} neste torneio. Só podes jogar uma categoria por torneio (os mistos são à parte). Cancela essa inscrição para mudares.` };
+  }
+
   const count = await prisma.entry.count({
     where: { categoryId, status: { in: ["PENDING", "CONFIRMED"] } },
   });
@@ -89,6 +109,10 @@ export async function registerSelf(_prev: EntryState, formData: FormData): Promi
       if (partnerId === me.id) return { error: "Não podes ser o teu próprio parceiro." };
       const exists = await prisma.player.findUnique({ where: { id: partnerId }, select: { id: true, name: true } });
       if (!exists) return { error: "Parceiro não encontrado." };
+      if (category.gender !== "MIXED") {
+        const pe = await otherGenderEntry(exists.id, comp.id, categoryId);
+        if (pe) return { error: `O teu parceiro já está inscrito em ${pe.category.name} neste torneio. Só se joga uma categoria por torneio (os mistos à parte). Escolhe outro parceiro.` };
+      }
       partnerPlayerId = exists.id;
       partnerLabel = exists.name;
     } else if (partnerName) {
