@@ -48,15 +48,15 @@ export function TournamentSidebar({
   return (
     <>
       {/* Desktop — painel de altura completa */}
-      <aside className="hidden h-full flex-col gap-4 border-r border-line bg-surface p-5 lg:flex">
-        <Link href="/admin" className="flex justify-center pt-1">
+      <aside className="hidden h-full flex-col gap-3 border-r border-line bg-surface p-4 lg:flex">
+        <Link href="/admin" className="flex justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/padelzone-logo-trim.png" alt="PadelZone" className="h-12 w-auto" />
+          <img src="/padelzone-logo-trim.png" alt="PadelZone" className="h-9 w-auto" />
         </Link>
 
-        <div className="pz-shadow-soft rounded-[18px] border border-line bg-surface p-4">
+        <div className="pz-shadow-soft rounded-2xl border border-line bg-surface p-3">
           <p className="truncate text-sm font-bold text-zinc-900">{name}</p>
-          <span className={`mt-1.5 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${st.cls}`}>{st.label}</span>
+          <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${st.cls}`}>{st.label}</span>
           {dateLabel && (
             <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted">
               <Clock className="size-3.5 text-soft" /> {dateLabel}
@@ -67,7 +67,7 @@ export function TournamentSidebar({
               <MapPin className="size-3.5 text-soft" /> {location}
             </p>
           )}
-          <div className="mt-3">
+          <div className="mt-2">
             <div className="flex items-center justify-between text-[11px] text-muted">
               <span>Progresso do torneio</span>
               <span className="font-bold text-zinc-700">{progress}%</span>
@@ -78,14 +78,14 @@ export function TournamentSidebar({
           </div>
         </div>
 
-        <nav className="space-y-1">
+        <nav className="space-y-0.5">
           {items.map((it) => {
             const a = isActive(it);
             return (
               <Link
                 key={it.href}
                 href={it.href}
-                className={`flex h-11 items-center gap-3 rounded-xl px-4 text-sm font-medium transition ${
+                className={`flex h-9 items-center gap-3 rounded-xl px-3.5 text-sm font-medium transition ${
                   a ? "pz-gradient pz-shadow-soft text-white" : "text-muted hover:bg-surface-soft"
                 }`}
               >
