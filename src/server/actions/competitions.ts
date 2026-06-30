@@ -103,6 +103,8 @@ export async function updateCompetition(formData: FormData) {
       endDate: toDate(formData.get("endDate")),
       regOpenAt: toDate(formData.get("regOpenAt")),
       regCloseAt: toDate(formData.get("regCloseAt")),
+      applRanked: formData.get("applRanked") === "on",
+      applType: (formData.get("applRanked") === "on" && String(formData.get("applType") ?? "").trim()) || null,
     },
   });
   const imageUrl = await saveImage(formData.get("image"), "competitions");
