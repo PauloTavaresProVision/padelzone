@@ -30,7 +30,7 @@ export default async function CalendarioPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ view?: string; day?: string; agendados?: string; fora?: string }>;
+  searchParams: Promise<{ view?: string; day?: string; den?: string; agendados?: string; fora?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -76,6 +76,7 @@ export default async function CalendarioPage({
   };
 
   const view = sp.view === "list" ? "list" : "grid";
+  const compact = sp.den === "compact";
   const dur = comp.matchDuration || 75;
 
   const scheduled = games.filter((g) => g.when);
@@ -185,9 +186,17 @@ export default async function CalendarioPage({
 
       {/* Vista + Modo TV */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex w-fit gap-1 rounded-xl bg-surface-soft p-1">
-          <Link href="?view=grid" className={tab(view === "grid")}><CalendarDays className="size-4" /> Calendário</Link>
-          <Link href="?view=list" className={tab(view === "list")}><LayoutList className="size-4" /> Lista</Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex w-fit gap-1 rounded-xl bg-surface-soft p-1">
+            <Link href="?view=grid" className={tab(view === "grid")}><CalendarDays className="size-4" /> Calendário</Link>
+            <Link href="?view=list" className={tab(view === "list")}><LayoutList className="size-4" /> Lista</Link>
+          </div>
+          {view === "grid" && (
+            <div className="flex w-fit gap-1 rounded-xl bg-surface-soft p-1">
+              <Link href={`?view=grid${selDay ? `&day=${selDay}` : ""}`} className={tab(!compact)}>Normal</Link>
+              <Link href={`?view=grid${selDay ? `&day=${selDay}` : ""}&den=compact`} className={tab(compact)}>Reduzido</Link>
+            </div>
+          )}
         </div>
         <CalendarTvButtons compId={comp.id} />
       </div>
@@ -237,7 +246,7 @@ export default async function CalendarioPage({
                 <tr className="bg-surface-soft">
                   <th className="sticky left-0 z-10 w-14 border-b border-r border-line bg-surface-soft p-2 text-xs font-semibold text-soft">Hora</th>
                   {courts.map((c) => (
-                    <th key={c.id} className="min-w-[150px] border-b border-l border-line p-2 text-center text-xs font-bold text-zinc-900">{c.name}</th>
+                    <th key={c.id} className={`border-b border-l border-line p-2 text-center text-xs font-bold text-zinc-900 ${compact ? "min-w-[96px]" : "min-w-[150px]"}`}>{c.name}</th>
                   ))}
                 </tr>
               </thead>
@@ -264,6 +273,7 @@ export default async function CalendarioPage({
                               }}
                               courts={courts}
                               color={catColor(g.cat)}
+                              compact={compact}
                             />
                           )}
                         </td>

@@ -20,8 +20,19 @@ const field = "w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm
 
 type CatColor = { border: string; bg: string; text: string };
 
-export function GridGame({ game, courts, color }: { game: Game; courts: Court[]; color: CatColor }) {
+// Em modo reduzido mostramos só o último nome de cada jogador, para caber no ecrã.
+function shortPair(name: string): string {
+  if (name === "—") return name;
+  return name
+    .split(/\s*[/&]\s*/)
+    .map((p) => { const parts = p.trim().split(/\s+/); return parts[parts.length - 1] || p; })
+    .join(" / ");
+}
+
+export function GridGame({ game, courts, color, compact = false }: { game: Game; courts: Court[]; color: CatColor; compact?: boolean }) {
   const [open, setOpen] = useState(false);
+  const nameA = compact ? shortPair(game.nameA) : game.nameA;
+  const nameB = compact ? shortPair(game.nameB) : game.nameB;
   const [ok, action, pending] = useActionState<boolean, FormData>(async (_prev, formData) => {
     await scheduleMatch(formData);
     return true;
@@ -36,15 +47,19 @@ export function GridGame({ game, courts, color }: { game: Game; courts: Court[];
         type="button"
         onClick={() => setOpen(true)}
         style={{ borderLeftColor: color.border, background: color.bg }}
-        className={`block w-full rounded-lg border-l-[3px] p-2 text-left transition hover:shadow-sm hover:brightness-[0.97] ${game.done ? "ring-1 ring-success/50" : ""}`}
+        className={`block w-full rounded-lg border-l-[3px] text-left transition hover:shadow-sm hover:brightness-[0.97] ${compact ? "p-1" : "p-2"} ${game.done ? "ring-1 ring-success/50" : ""}`}
       >
-        <div className="flex items-center justify-between gap-1">
-          <span className="text-[10px] text-muted">{game.timeRange}</span>
-          {game.done && <span className="rounded bg-success-bg px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-success">Terminado</span>}
-        </div>
-        <p className="text-[11px] font-bold" style={{ color: color.text }}>{game.cat} · {game.section}</p>
-        <p className="truncate text-xs text-zinc-800">{game.nameA}</p>
-        <p className="truncate text-xs text-zinc-800">{game.nameB}</p>
+        {!compact && (
+          <>
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] text-muted">{game.timeRange}</span>
+              {game.done && <span className="rounded bg-success-bg px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-success">Terminado</span>}
+            </div>
+            <p className="text-[11px] font-bold" style={{ color: color.text }}>{game.cat} · {game.section}</p>
+          </>
+        )}
+        <p className={`truncate ${compact ? "text-[10px] leading-snug text-zinc-700" : "text-xs text-zinc-800"}`}>{nameA}</p>
+        <p className={`truncate ${compact ? "text-[10px] leading-snug text-zinc-700" : "text-xs text-zinc-800"}`}>{nameB}</p>
       </button>
 
       {open && (
