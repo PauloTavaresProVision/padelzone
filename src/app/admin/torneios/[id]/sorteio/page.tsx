@@ -299,9 +299,9 @@ export default async function SorteioPage({
                       Pronto a sortear <strong className="text-zinc-900">{confirmed}</strong> duplas
                       {cat.useSeeds ? " · com cabeças de série" : " · 100% aleatório"}
                     </p>
-                    <button className="pz-gradient inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95">
+                    <ConfirmButton message="Lançar o sorteio inicia o torneio (passa a 'Em curso' e fica visível). Continuar?" className="pz-gradient inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95">
                       <Shuffle className="size-4" /> Lançar sorteio
-                    </button>
+                    </ConfirmButton>
                   </form>
                 )
               ) : (

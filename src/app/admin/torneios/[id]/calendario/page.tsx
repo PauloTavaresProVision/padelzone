@@ -9,6 +9,7 @@ import { sideName } from "@/server/draw";
 import { updateScheduleSettings, autoSchedule } from "@/server/actions/schedule";
 import { ScheduleBoard, type SchedGame } from "@/components/schedule-board";
 import { GridGame } from "@/components/grid-game";
+import { SaveButton } from "@/components/save-button";
 import { TournamentHeader } from "@/components/tournament-header";
 import { CalendarTvButtons } from "@/components/calendar-tv-buttons";
 
@@ -172,7 +173,7 @@ export default async function CalendarioPage({
             </div>
           </div>
           <label className={labelS}>Femininas não jogam depois das<input name="femaleLatestStart" type="time" defaultValue={comp.femaleLatestStart ?? ""} className={fieldS} /></label>
-          <button className="rounded-lg border border-line px-3 py-2 text-sm font-medium text-muted transition hover:bg-surface-soft">Guardar</button>
+          <SaveButton className="rounded-lg border border-line px-3 py-2 text-sm font-medium text-muted transition hover:bg-surface-soft">Guardar</SaveButton>
         </form>
         <form action={autoSchedule}>
           <input type="hidden" name="competitionId" value={comp.id} />

@@ -7,6 +7,7 @@ import { updateCompetition, setCompetitionStatus, deleteCompetition } from "@/se
 import { finalizeCompetition } from "@/server/actions/ranking";
 import { TournamentHeader } from "@/components/tournament-header";
 import { ApplRankingFields } from "@/components/appl-ranking-fields";
+import { SaveButton } from "@/components/save-button";
 
 export const dynamic = "force-dynamic";
 
@@ -122,7 +123,7 @@ export default async function DefinicoesPage({ params }: { params: Promise<{ id:
             />
           </div>
           <ApplRankingFields defaultRanked={comp.applRanked} defaultType={comp.applType} />
-          <button type="submit" className={primaryBtn}>Guardar alterações</button>
+          <SaveButton className={primaryBtn}>Guardar alterações</SaveButton>
         </form>
       </section>
 

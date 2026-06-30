@@ -38,6 +38,11 @@ export async function launchDraw(formData: FormData) {
     // gerado DEPOIS dos grupos, com os apurados reais (como no PadelTeams: "Configurar").
     await persistGroups(categoryId, cat.numGroups, cat.useSeeds);
   }
+  // Lançar o sorteio INICIA o torneio: se estava oculto (rascunho) ou em inscrições, passa a "Em curso".
+  await prisma.competition.updateMany({
+    where: { id: cat.competitionId, status: { in: ["DRAFT", "OPEN"] } },
+    data: { status: "ONGOING" },
+  });
   revalidate();
 }
 
