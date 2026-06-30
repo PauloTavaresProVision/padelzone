@@ -75,7 +75,7 @@ export function CreateCompetitionForm({ clubId, templates }: { clubId: number; t
                     {group.items.map((t) => (
                       <label key={t.id} className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 transition hover:border-brand-purple/50 dark:border-zinc-700 dark:text-zinc-300">
                         <input type="checkbox" name="templateIds" value={t.id} className="size-4 accent-brand-purple" />
-                        {t.label}
+                        {t.code}
                       </label>
                     ))}
                   </div>
@@ -120,9 +120,9 @@ export function CreateCompetitionForm({ clubId, templates }: { clubId: number; t
       <div className="mt-5 flex items-center justify-between gap-2">
         <button type="button" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className={btnGhost}>Voltar</button>
         {step < STEPS.length - 1 ? (
-          <button type="button" onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))} className={btnPrimary}>Seguinte</button>
+          <button key="next" type="button" onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))} className={btnPrimary}>Seguinte</button>
         ) : (
-          <button type="submit" disabled={pending} className={btnPrimary}>{pending ? "A criar…" : "Criar torneio"}</button>
+          <button key="create" type="submit" disabled={pending} className={btnPrimary}>{pending ? "A criar…" : "Criar torneio"}</button>
         )}
       </div>
     </form>

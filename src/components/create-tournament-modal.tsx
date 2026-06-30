@@ -18,8 +18,8 @@ export function CreateTournamentModal({ clubId, templates }: { clubId: number; t
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4 py-10" onClick={() => setOpen(false)}>
-          <div className="relative mx-auto w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4 py-10" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
+          <div className="relative mx-auto w-full max-w-lg">
             <button
               onClick={() => setOpen(false)}
               aria-label="Fechar"
