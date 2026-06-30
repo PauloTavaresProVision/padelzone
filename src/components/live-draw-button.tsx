@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Shuffle, Loader2 } from "lucide-react";
 import { launchDraw } from "@/server/actions/draw";
+import { ConfirmDialog } from "./confirm-dialog";
 
 const SUSPENSE_MS = 3000;
 
 export function LiveDrawButton({ categoryId, categoryName, names }: { categoryId: number; categoryName: string; names: string[] }) {
   const router = useRouter();
   const [drawing, setDrawing] = useState(false);
+  const [ask, setAsk] = useState(false);
   const [flash, setFlash] = useState(names[0] ?? "…");
 
   useEffect(() => {
@@ -38,12 +40,22 @@ export function LiveDrawButton({ categoryId, categoryName, names }: { categoryId
   return (
     <>
       <button
-        onClick={() => { if (window.confirm(`Sortear ${categoryName} agora? Não dá para desfazer.`)) setDrawing(true); }}
+        onClick={() => setAsk(true)}
         disabled={drawing}
         className="pz-gradient inline-flex items-center gap-2 rounded-2xl px-8 py-4 text-lg font-bold text-white shadow-lg transition hover:scale-[1.03] hover:opacity-95 disabled:opacity-80"
       >
         <Shuffle className="size-6" /> Sortear {categoryName}
       </button>
+
+      <ConfirmDialog
+        open={ask}
+        title={`Sortear ${categoryName}?`}
+        message="O sorteio é feito agora, à frente de todos, e não dá para desfazer."
+        confirmLabel="Sortear agora"
+        tone="brand"
+        onCancel={() => setAsk(false)}
+        onConfirm={() => { setAsk(false); setDrawing(true); }}
+      />
 
       {drawing && (
         <div className="pz-gradient fixed inset-0 z-50 grid place-items-center p-6 text-white">

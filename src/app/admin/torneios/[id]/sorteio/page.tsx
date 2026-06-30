@@ -12,6 +12,7 @@ import { BracketView } from "@/components/bracket-view";
 import { GroupsView } from "@/components/groups-view";
 import { TournamentHeader } from "@/components/tournament-header";
 import { ConfirmButton } from "@/components/confirm-button";
+import { ConfirmLink } from "@/components/confirm-link";
 
 export const dynamic = "force-dynamic";
 
@@ -138,12 +139,15 @@ export default async function SorteioPage({
           <p className="text-sm font-semibold text-zinc-900">Apresentação ao público</p>
           <p className="text-sm text-muted">Lança categoria a categoria, ao vivo, num ecrã grande.</p>
         </div>
-        <Link
+        <ConfirmLink
           href={`/admin/torneios/${comp.id}/ao-vivo`}
+          needConfirm={drawnCount > 0}
+          title="Sorteio ao vivo"
+          message="Este torneio já tem sorteios feitos. Se entrares e voltares a sortear, substituis o que já está. Continuar?"
           className="pz-gradient inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-95"
         >
           <Radio className="size-4" /> Sorteio ao vivo
-        </Link>
+        </ConfirmLink>
       </div>
 
       {categories.length === 0 ? (
@@ -299,7 +303,7 @@ export default async function SorteioPage({
                       Pronto a sortear <strong className="text-zinc-900">{confirmed}</strong> duplas
                       {cat.useSeeds ? " · com cabeças de série" : " · 100% aleatório"}
                     </p>
-                    <ConfirmButton message="Lançar o sorteio inicia o torneio (passa a 'Em curso' e fica visível). Continuar?" className="pz-gradient inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95">
+                    <ConfirmButton message="Lançar o sorteio inicia o torneio (passa a 'Em curso' e fica visível)." title="Lançar o sorteio?" confirmLabel="Lançar" tone="brand" className="pz-gradient inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95">
                       <Shuffle className="size-4" /> Lançar sorteio
                     </ConfirmButton>
                   </form>
