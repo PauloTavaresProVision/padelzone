@@ -1,14 +1,20 @@
 import { prisma } from "@/lib/prisma";
+import { applClass, applLevel, applPoints, placementForRound } from "@/lib/appl-points";
 
-// Atribui pontos de ranking aos jogadores de uma categoria, pelo desempenho.
-// Esquema simples (afinável): 10 base + 20 por jogo ganho + 30 campeão (eliminatórias)
-// + 20 por 1.º lugar de grupo. Ambos os jogadores de uma dupla recebem os pontos.
+// Atribui pontos de ranking aos jogadores de uma categoria, pela COLOCAÇÃO no quadro,
+// segundo a tabela oficial APPL (classe da prova × nível × ronda atingida). Só pontua se a
+// competição CONTA para o ranking APPL. Ambos os jogadores de uma dupla recebem os pontos.
 export async function awardCategoryPoints(categoryId: number) {
-  const entries = await prisma.entry.findMany({
-    where: { categoryId, status: "CONFIRMED" },
-    include: { team: true },
+  const cat = await prisma.category.findUnique({
+    where: { id: categoryId },
+    select: { name: true, competition: { select: { applRanked: true, applType: true } } },
   });
+  if (!cat?.competition.applRanked) return; // provas sociais/não-oficiais não pontuam
+  const cls = applClass(cat.competition.applType);
+  if (!cls) return;
+  const level = applLevel(cat.name);
 
+  const entries = await prisma.entry.findMany({ where: { categoryId, status: "CONFIRMED" }, include: { team: true } });
   const teamToEntry = new Map<number, number>();
   const playerToEntry = new Map<number, number>();
   const entryPlayers = new Map<number, number[]>();
@@ -25,11 +31,13 @@ export async function awardCategoryPoints(categoryId: number) {
     entryPlayers.set(e.id, pls);
   }
 
-  const stage = await prisma.stage.findFirst({
-    where: { categoryId },
-    include: { matches: { include: { sides: { include: { players: true } }, result: true } }, standings: true },
+  // A colocação vem do quadro de eliminatórias.
+  const ko = await prisma.stage.findFirst({
+    where: { categoryId, type: "KNOCKOUT" },
+    orderBy: { order: "desc" },
+    include: { matches: { include: { sides: { include: { players: true } }, result: true } } },
   });
-  if (!stage) return;
+  if (!ko || ko.matches.length === 0) return;
 
   const entryOf = (side?: { teamId: number | null; players: { playerId: number }[] }) => {
     if (!side) return undefined;
@@ -38,26 +46,21 @@ export async function awardCategoryPoints(categoryId: number) {
     return undefined;
   };
 
-  const won = new Map<number, number>();
-  let championEntry: number | undefined;
-  const maxRound = stage.matches.length ? Math.max(...stage.matches.map((m) => m.round)) : 0;
+  const maxRound = Math.max(...ko.matches.map((m) => m.round));
+  const ptsByEntry = new Map<number, number>();
+  let champion: number | undefined;
 
-  for (const m of stage.matches) {
+  for (const m of ko.matches) {
     if (m.status !== "DONE" || !m.result) continue;
-    const we = entryOf(m.sides.find((s) => s.side === m.result!.winnerSide));
-    if (we == null) continue;
-    won.set(we, (won.get(we) ?? 0) + 1);
-    if (stage.type === "KNOCKOUT" && m.nextMatchId === null && m.round === maxRound) championEntry = we;
+    const fromEnd = maxRound - m.round; // 0 = final
+    const loser = entryOf(m.sides.find((s) => s.side !== m.result!.winnerSide));
+    if (loser != null) ptsByEntry.set(loser, applPoints(cls, level, placementForRound(fromEnd, false)));
+    if (fromEnd === 0) champion = entryOf(m.sides.find((s) => s.side === m.result!.winnerSide));
   }
+  if (champion != null) ptsByEntry.set(champion, applPoints(cls, level, "VENCEDOR"));
 
-  const rank1 = new Set<number>();
-  if (stage.type === "GROUPS") for (const s of stage.standings) if (s.rank === 1) rank1.add(s.entryId);
-
-  for (const e of entries) {
-    let pts = 10 + 20 * (won.get(e.id) ?? 0);
-    if (championEntry === e.id) pts += 30;
-    if (rank1.has(e.id)) pts += 20;
-    for (const pid of entryPlayers.get(e.id) ?? []) {
+  for (const [eid, pts] of ptsByEntry) {
+    for (const pid of entryPlayers.get(eid) ?? []) {
       await prisma.player.update({ where: { id: pid }, data: { rankingPoints: { increment: pts } } });
     }
   }
