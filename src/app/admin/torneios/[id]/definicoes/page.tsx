@@ -110,6 +110,10 @@ export default async function DefinicoesPage({ params }: { params: Promise<{ id:
           </div>
           <div>
             <label className={label}>Foto do torneio</label>
+            {comp.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={comp.imageUrl} alt="Foto do torneio" className="mb-2 h-24 w-40 rounded-lg border border-line object-cover" />
+            )}
             <input
               type="file"
               name="image"

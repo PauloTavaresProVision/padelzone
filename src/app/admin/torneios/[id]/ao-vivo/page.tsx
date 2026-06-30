@@ -8,6 +8,7 @@ import { getCompetition } from "@/server/competitions";
 import { getCategoryStages, entryName } from "@/server/draw";
 import { resetCompetitionDraw } from "@/server/actions/draw";
 import { LiveDrawButton } from "@/components/live-draw-button";
+import { ConfirmButton } from "@/components/confirm-button";
 
 export const dynamic = "force-dynamic";
 
@@ -105,9 +106,9 @@ export default async function AoVivoPage({
         {drawnCount > 0 && (
           <form action={resetCompetitionDraw}>
             <input type="hidden" name="competitionId" value={comp.id} />
-            <button className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted transition hover:bg-surface-soft">
+            <ConfirmButton message="ATENÇÃO: isto apaga TODOS os sorteios e resultados de TODAS as categorias. Tens a certeza?" className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted transition hover:bg-surface-soft">
               <RotateCcw className="size-3.5" /> Recomeçar
-            </button>
+            </ConfirmButton>
           </form>
         )}
       </div>

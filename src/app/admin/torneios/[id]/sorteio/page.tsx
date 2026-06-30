@@ -11,6 +11,7 @@ import { findQualifierTies } from "@/server/draw-engine";
 import { BracketView } from "@/components/bracket-view";
 import { GroupsView } from "@/components/groups-view";
 import { TournamentHeader } from "@/components/tournament-header";
+import { ConfirmButton } from "@/components/confirm-button";
 
 export const dynamic = "force-dynamic";
 
@@ -270,9 +271,9 @@ export default async function SorteioPage({
                 {stages.length > 0 && (
                   <form action={clearDraw}>
                     <input type="hidden" name="categoryId" value={cat.id} />
-                    <button className="inline-flex items-center gap-1.5 text-xs font-medium text-danger transition hover:opacity-80">
+                    <ConfirmButton message="Isto apaga o sorteio desta categoria (grupos e quadro de apuramento). Continuar?" className="inline-flex items-center gap-1.5 text-xs font-medium text-danger transition hover:opacity-80">
                       <Trash2 className="size-3.5" /> Limpar
-                    </button>
+                    </ConfirmButton>
                   </form>
                 )}
               </div>
@@ -380,9 +381,9 @@ export default async function SorteioPage({
                             ))}
                           </select>
                         </div>
-                        <button className="pz-gradient inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95">
+                        <ConfirmButton message={koFilled ? "Refazer o quadro SUBSTITUI o atual e perde o que já lá estava. Continuar?" : "Gerar o quadro de apuramento com este tamanho?"} className="pz-gradient inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-95">
                           <Trophy className="size-4" /> {koFilled ? "Refazer quadro de apuramento" : "Gerar quadro de apuramento"}
-                        </button>
+                        </ConfirmButton>
                         <span className="max-w-md text-xs text-muted">Apura por ordem: todos os 1ºs, depois os 2ºs e, se faltarem para encher o quadro, os melhores 3ºs, 4ºs… comparados entre todos os grupos. Podes voltar a gerar.</span>
                       </form>
                     ) : (

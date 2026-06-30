@@ -38,7 +38,7 @@ export function LiveDrawButton({ categoryId, categoryName, names }: { categoryId
   return (
     <>
       <button
-        onClick={() => setDrawing(true)}
+        onClick={() => { if (window.confirm(`Sortear ${categoryName} agora? Não dá para desfazer.`)) setDrawing(true); }}
         disabled={drawing}
         className="pz-gradient inline-flex items-center gap-2 rounded-2xl px-8 py-4 text-lg font-bold text-white shadow-lg transition hover:scale-[1.03] hover:opacity-95 disabled:opacity-80"
       >
