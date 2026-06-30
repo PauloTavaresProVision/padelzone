@@ -23,7 +23,7 @@ export function TournamentShell({ sidebar, children }: { sidebar: React.ReactNod
         collapsed ? "lg:grid-cols-1" : "lg:grid-cols-[260px_1fr]"
       }`}
     >
-      <div className={`${collapsed ? "lg:hidden" : ""} lg:sticky lg:top-0 lg:self-start`}>{sidebar}</div>
+      <div className={`${collapsed ? "lg:hidden" : ""} no-scrollbar lg:sticky lg:top-0 lg:self-start lg:max-h-screen lg:overflow-y-auto`}>{sidebar}</div>
 
       <div className="min-w-0 px-4 pt-4 pb-10 lg:px-8 lg:pt-5 lg:pb-10">
         <SidebarToggleContext.Provider value={{ collapsed, toggle }}>{children}</SidebarToggleContext.Provider>

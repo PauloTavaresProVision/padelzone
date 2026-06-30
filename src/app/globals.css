@@ -83,6 +83,10 @@ body {
   font-family: var(--font-inter), Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+/* Barra lateral fixa do torneio: rola sozinha quando é mais alta que o ecrã, sem scrollbar visível. */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 /* Conteúdo do regulamento (editor + público) */
 .rules-content h1, .rules-content h2 { font-size: 1.15rem; font-weight: 700; margin: 0.85rem 0 0.4rem; color: var(--brand-navy); }
 .rules-content h3 { font-size: 1.02rem; font-weight: 700; margin: 0.7rem 0 0.3rem; color: var(--brand-navy); }
