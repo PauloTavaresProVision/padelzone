@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex min-h-screen bg-app">
       <AdminSidebar clubName={club.name} clubCity={club.city ?? ""} userName={user.name} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <main className="flex-1 overflow-x-hidden px-4 py-5 pb-24 lg:px-8 lg:py-7 lg:pb-7">{children}</main>
+        <main className="flex-1 overflow-x-clip px-4 py-5 pb-24 lg:px-8 lg:py-7 lg:pb-7">{children}</main>
         <AdminMobileNav />
       </div>
     </div>
