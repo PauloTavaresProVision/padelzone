@@ -6,6 +6,8 @@ import { sideName } from "@/server/draw";
 import { TvControls } from "@/components/tv-controls";
 import { TvGrid } from "@/components/tv-grid";
 import { FitScreen } from "@/components/fit-screen";
+import { TvLive } from "@/components/tv-live";
+import { LayoutGrid, Radio } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +27,7 @@ export default async function ScheduleTvPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ day?: string }>;
+  searchParams: Promise<{ day?: string; vista?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -101,6 +103,17 @@ export default async function ScheduleTvPage({
       winner: g.winner,
     }));
 
+  const vista = sp.vista === "live" ? "live" : "grelha";
+  const courtName = (cid: number) => courtList.find((c) => c.id === cid)?.name ?? "Campo";
+  const liveItems = dayGames
+    .filter((g) => g.status === "LIVE")
+    .map((g) => ({ id: g.id, court: courtName(g.courtId), cat: g.cat, section: g.section, nameA: g.nameA, nameB: g.nameB }));
+  const upcomingItems = dayGames
+    .filter((g) => g.status !== "DONE" && g.status !== "LIVE")
+    .sort((a, b) => a.when.getTime() - b.when.getTime())
+    .slice(0, 9)
+    .map((g) => ({ id: g.id, tk: timeKey(g.when), court: courtName(g.courtId), cat: g.cat, section: g.section, nameA: g.nameA, nameB: g.nameB }));
+
   const h = await headers();
   const host = h.get("host") ?? "localhost:3010";
   const proto = h.get("x-forwarded-proto") ?? "http";
@@ -129,13 +142,23 @@ export default async function ScheduleTvPage({
                 <span className="size-2.5 animate-pulse rounded-full bg-white" /> Em direto
               </p>
             </div>
+            <div className="flex overflow-hidden rounded-xl border border-white/25">
+              <Link href={`?day=${selDay ?? ""}&vista=grelha`} scroll={false} title="Grelha" className={`grid size-11 place-items-center transition ${vista === "grelha" ? "bg-white/25" : "text-white/70 hover:bg-white/10"}`}>
+                <LayoutGrid className="size-5" />
+              </Link>
+              <Link href={`?day=${selDay ?? ""}&vista=live`} scroll={false} title="Ao vivo" className={`grid size-11 place-items-center transition ${vista === "live" ? "bg-white/25" : "text-white/70 hover:bg-white/10"}`}>
+                <Radio className="size-5" />
+              </Link>
+            </div>
             <TvControls refreshSeconds={45} />
           </div>
         </header>
 
         {/* Grelha campo × hora (com rotação pelos campos) */}
         <main className="min-h-0 flex-1 overflow-hidden px-12 py-6">
-          {cells.length === 0 ? (
+          {vista === "live" ? (
+            <TvLive live={liveItems} upcoming={upcomingItems} />
+          ) : cells.length === 0 ? (
             <div className="grid h-full place-items-center">
               <div className="text-center">
                 <p className="text-5xl font-black text-zinc-900">Sem jogos para mostrar</p>
@@ -155,7 +178,7 @@ export default async function ScheduleTvPage({
                 {days.map((d) => (
                   <Link
                     key={d}
-                    href={`?day=${d}`}
+                    href={`?day=${d}&vista=${vista}`}
                     scroll={false}
                     className={`rounded-xl px-4 py-2 text-lg font-bold capitalize transition ${d === selDay ? "pz-gradient text-white" : "bg-surface-soft text-muted hover:text-zinc-900"}`}
                   >
