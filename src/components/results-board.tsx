@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useActionState } from "react";
-import { Search, MapPin, CalendarClock, Clock, Trophy } from "lucide-react";
-import { submitResult, type ResultState } from "@/server/actions/results";
+import { Search, MapPin, CalendarClock, Clock, Trophy, Play } from "lucide-react";
+import { submitResult, setMatchLive, type ResultState } from "@/server/actions/results";
 
 export type Game = {
   id: number;
@@ -13,6 +13,7 @@ export type Game = {
   realA: boolean;
   realB: boolean;
   done: boolean;
+  live: boolean;
   winner: "A" | "B" | null;
   sets: { a: number; b: number }[];
   courtName?: string | null;
@@ -115,7 +116,9 @@ function GameCard({ g }: { g: Game }) {
     ? { label: "Aguarda apuramento", dot: "bg-soft", cls: "bg-surface-soft text-soft" }
     : g.done
       ? { label: "Terminado", dot: "bg-success", cls: "bg-success-bg text-success" }
-      : { label: "Por jogar", dot: "bg-brand-purple", cls: "bg-primary-light text-brand-purple" };
+      : g.live
+        ? { label: "A jogar", dot: "bg-amber-500 animate-pulse", cls: "bg-amber-50 text-amber-700" }
+        : { label: "Por jogar", dot: "bg-brand-purple", cls: "bg-primary-light text-brand-purple" };
 
   const col = "grid grid-cols-[minmax(0,1fr)_repeat(3,2.75rem)] items-center gap-2";
   const setBox =
@@ -130,6 +133,19 @@ function GameCard({ g }: { g: Game }) {
           <span className={`size-1.5 rounded-full ${status.dot}`} /> {status.label}
         </span>
       </div>
+
+      {ready && !g.done && (
+        <form action={setMatchLive} className="mb-3">
+          <input type="hidden" name="matchId" value={g.id} />
+          <input type="hidden" name="live" value={g.live ? "0" : "1"} />
+          <button
+            type="submit"
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${g.live ? "border-line text-muted hover:bg-surface-soft" : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"}`}
+          >
+            {g.live ? "Marcar como não iniciado" : (<><Play className="size-3.5" /> Iniciar jogo</>)}
+          </button>
+        </form>
+      )}
 
       <form action={action}>
         <input type="hidden" name="matchId" value={g.id} />

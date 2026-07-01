@@ -48,6 +48,7 @@ export default async function ResultadosPage({ params }: { params: Promise<{ id:
       realA: !!(a?.team || a?.players?.length),
       realB: !!(b?.team || b?.players?.length),
       done: m.status === "DONE",
+      live: m.status === "LIVE",
       winner: (m.result?.winnerSide as "A" | "B" | null) ?? null,
       sets: score?.sets ?? [],
       courtName: m.courtId ? courtMap.get(m.courtId) ?? null : null,

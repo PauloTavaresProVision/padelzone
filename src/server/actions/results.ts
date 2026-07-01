@@ -73,3 +73,26 @@ export async function submitResult(_prev: ResultState, formData: FormData): Prom
   revalidatePath("/admin", "layout");
   return { ok: true };
 }
+
+// Marca um jogo como "a jogar" (LIVE) ou reverte para não iniciado. Reflete-se no modo TV.
+export async function setMatchLive(formData: FormData) {
+  const userId = await getSessionUserId();
+  if (!userId) throw new Error("Sessão expirada.");
+  const matchId = Number(formData.get("matchId"));
+  const live = String(formData.get("live") ?? "") === "1";
+
+  const match = await prisma.match.findUnique({
+    where: { id: matchId },
+    include: { stage: { include: { category: { include: { competition: { select: { clubId: true } } } } } } },
+  });
+  if (!match) throw new Error("Jogo não encontrado.");
+  if (match.status === "DONE") return; // já terminado
+
+  const clubId = match.stage.category.competition.clubId;
+  const m = await prisma.clubUser.findUnique({ where: { clubId_userId: { clubId, userId } } });
+  if (!m || !MANAGER_ROLES.includes(m.role)) throw new Error("Sem permissão.");
+
+  const next = live ? "LIVE" : match.scheduledAt ? "SCHEDULED" : "PENDING";
+  await prisma.match.update({ where: { id: matchId }, data: { status: next as never } });
+  revalidatePath("/admin", "layout");
+}
