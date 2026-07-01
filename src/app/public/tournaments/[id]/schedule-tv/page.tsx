@@ -15,7 +15,7 @@ const fmtDay = (key: string) =>
 type Sets = { a: number; b: number }[];
 
 // Quantas faixas horárias mostrar de cada vez (janela à volta do "agora").
-const WINDOW = 5;
+const WINDOW = 4;
 
 export default async function ScheduleTvPage({
   params,
@@ -105,9 +105,9 @@ export default async function ScheduleTvPage({
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=10&data=${encodeURIComponent(publicUrl)}`;
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ background: "linear-gradient(180deg,#ffffff 0%,#f1eefa 100%)" }}>
+    <div className="flex h-screen flex-col overflow-hidden" style={{ background: "linear-gradient(180deg,#ffffff 0%,#f1eefa 100%)" }}>
       {/* Cabeçalho */}
-      <header className="pz-gradient flex items-center justify-between gap-6 px-8 py-4 text-white">
+      <header className="pz-gradient flex shrink-0 items-center justify-between gap-6 px-8 py-4 text-white">
         <div className="flex min-w-0 items-center gap-4">
           <div className="grid shrink-0 place-items-center rounded-xl bg-white px-3 py-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -130,7 +130,7 @@ export default async function ScheduleTvPage({
       </header>
 
       {/* Grelha campo × hora (com rotação pelos campos) */}
-      <main className="flex-1 overflow-hidden p-6">
+      <main className="min-h-0 flex-1 overflow-hidden p-4 sm:p-6">
         {cells.length === 0 ? (
           <div className="grid h-full place-items-center">
             <div className="text-center">
@@ -144,7 +144,7 @@ export default async function ScheduleTvPage({
       </main>
 
       {/* Rodapé com dias e QR */}
-      <footer className="flex items-center justify-between gap-4 border-t border-line bg-surface px-8 py-3">
+      <footer className="flex shrink-0 items-center justify-between gap-4 border-t border-line bg-surface px-8 py-3">
         <div className="flex items-center gap-3">
           {days.length > 1 && (
             <div className="flex flex-wrap gap-1.5">
