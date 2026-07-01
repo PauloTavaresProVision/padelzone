@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Maximize, Minimize } from "lucide-react";
 
 export function TvControls({ refreshSeconds = 45 }: { refreshSeconds?: number }) {
   const [time, setTime] = useState("--:--:--");
   const [fs, setFs] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const tick = () => setTime(new Intl.DateTimeFormat("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date()));
@@ -15,9 +17,10 @@ export function TvControls({ refreshSeconds = 45 }: { refreshSeconds?: number })
   }, []);
 
   useEffect(() => {
-    const r = setInterval(() => window.location.reload(), refreshSeconds * 1000);
+    // Atualiza os dados sem recarregar a página (senão sairia do ecrã completo).
+    const r = setInterval(() => router.refresh(), refreshSeconds * 1000);
     return () => clearInterval(r);
-  }, [refreshSeconds]);
+  }, [refreshSeconds, router]);
 
   useEffect(() => {
     const h = () => setFs(Boolean(document.fullscreenElement));

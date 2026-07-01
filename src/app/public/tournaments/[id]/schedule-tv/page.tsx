@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { sideName } from "@/server/draw";
@@ -152,13 +153,14 @@ export default async function ScheduleTvPage({
             {days.length > 1 && (
               <div className="flex flex-wrap gap-2">
                 {days.map((d) => (
-                  <a
+                  <Link
                     key={d}
                     href={`?day=${d}`}
+                    scroll={false}
                     className={`rounded-xl px-4 py-2 text-lg font-bold capitalize transition ${d === selDay ? "pz-gradient text-white" : "bg-surface-soft text-muted hover:text-zinc-900"}`}
                   >
                     {new Intl.DateTimeFormat("pt-PT", { timeZone: "UTC", weekday: "short", day: "2-digit" }).format(new Date(d + "T12:00:00Z"))}
-                  </a>
+                  </Link>
                 ))}
               </div>
             )}
