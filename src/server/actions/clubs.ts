@@ -9,6 +9,7 @@ import { getSessionUserId } from "@/lib/auth";
 import { STANDARD_CATEGORY_TEMPLATES } from "@/lib/categories";
 import { saveImage } from "@/server/upload";
 import { notifyEmail } from "@/lib/email";
+import { NOTIFY_EVENTS } from "@/lib/notify";
 
 type ManageableRole = "CLUB_OWNER" | "DIRECTOR" | "REFEREE" | "STAFF";
 const MANAGER_ROLES = ["CLUB_OWNER", "DIRECTOR"];
@@ -199,5 +200,33 @@ export async function removeMember(formData: FormData) {
   if (member && member.role !== "CLUB_OWNER") {
     await prisma.clubUser.delete({ where: { id: memberId } });
   }
+  revalidatePath("/admin", "layout");
+}
+
+// Preferências de notificação do clube (evento × canais) + chave WeSender própria (SMS).
+export async function updateClubNotifications(formData: FormData) {
+  const userId = await getSessionUserId();
+  if (!userId) throw new Error("Sessão expirada.");
+  const clubId = Number(formData.get("clubId"));
+  await requireManager(clubId, userId);
+
+  const on = (k: string) => formData.get(k) === "on";
+  const prefs: Record<string, { enabled: boolean; email: boolean; sms: boolean; whatsapp: boolean }> = {};
+  for (const { key } of NOTIFY_EVENTS) {
+    prefs[key] = {
+      enabled: on(`pref_${key}_enabled`),
+      email: on(`pref_${key}_email`),
+      sms: on(`pref_${key}_sms`),
+      whatsapp: false, // canal por ligar
+    };
+  }
+
+  await prisma.club.update({
+    where: { id: clubId },
+    data: {
+      wesenderApiKey: String(formData.get("wesenderApiKey") ?? "").trim() || null,
+      notifyPrefs: prefs,
+    },
+  });
   revalidatePath("/admin", "layout");
 }

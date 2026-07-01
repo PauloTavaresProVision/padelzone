@@ -7,7 +7,7 @@ import { notifyPlayers } from "@/lib/notify";
 export async function confirmPaymentPaid(paymentId: number) {
   const p = await prisma.payment.findUnique({
     where: { id: paymentId },
-    include: { entry: { include: { team: true, category: { select: { competition: { select: { name: true } } } } } } },
+    include: { entry: { include: { team: true, category: { select: { competition: { select: { name: true, clubId: true } } } } } } },
   });
   if (!p || p.status === "PAID") return;
   await prisma.payment.update({ where: { id: paymentId }, data: { status: "PAID" } });
@@ -16,10 +16,15 @@ export async function confirmPaymentPaid(paymentId: number) {
   const ids: (number | null)[] = [];
   if (p.entry?.team) ids.push(p.entry.team.player1Id, p.entry.team.player2Id);
   if (p.entry?.playerId) ids.push(p.entry.playerId);
-  const comp = p.entry?.category.competition.name ?? "o torneio";
-  await notifyPlayers(
-    ids,
-    `Pagamento recebido. A tua inscrição no torneio "${comp}" está confirmada.`,
-    "Pagamento confirmado · PadelZone",
-  );
+  const comp = p.entry?.category.competition;
+  const compName = comp?.name ?? "o torneio";
+  if (comp?.clubId) {
+    await notifyPlayers({
+      clubId: comp.clubId,
+      event: "payment",
+      playerIds: ids,
+      message: `Pagamento recebido. A tua inscrição no torneio "${compName}" está confirmada.`,
+      subject: "Pagamento confirmado · PadelZone",
+    });
+  }
 }

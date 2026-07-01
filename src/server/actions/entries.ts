@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getSessionUserId, signPlayerInvite } from "@/lib/auth";
 import { isMessagingConfigured, sendWesender } from "@/lib/wesender";
-import { notifyEmail } from "@/lib/email";
+import { notifyPlayers } from "@/lib/notify";
 
 export type EntryState = { error?: string } | null;
 
@@ -146,7 +146,7 @@ export async function registerSelf(_prev: EntryState, formData: FormData): Promi
   }
 
   // Convite ao parceiro não registado (WhatsApp/SMS via WeSender). Não bloqueia a inscrição se falhar.
-  if (invite && (await isMessagingConfigured())) {
+  if (invite && (await isMessagingConfigured(comp.clubId))) {
     try {
       const h = await headers();
       const host = h.get("host") ?? "localhost:3010";
@@ -154,20 +154,22 @@ export async function registerSelf(_prev: EntryState, formData: FormData): Promi
       const link = `${proto}://${host}/registar?parceiro=${signPlayerInvite(invite.playerId)}`;
       await sendWesender(
         [invite.phone],
-        `Olá ${invite.name}! Foste inscrito(a) no torneio "${comp.name}" com ${me.name} no PadelZone. Para continuares na competição cria a tua conta aqui: ${link} . Sem registo não será possível participar.`
+        `Olá ${invite.name}! Foste inscrito(a) no torneio "${comp.name}" com ${me.name} no PadelZone. Para continuares na competição cria a tua conta aqui: ${link} . Sem registo não será possível participar.`,
+        { clubId: comp.clubId },
       );
     } catch {
       // ignora falha de envio
     }
   }
 
-  // Confirmação por email ao próprio jogador (best-effort).
-  const meUser = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
-  await notifyEmail(
-    meUser?.email,
-    "Inscrição confirmada · PadelZone",
-    `<p>Olá ${meUser?.name ?? ""},</p><p>A tua inscrição no torneio <strong>${comp.name}</strong> foi registada${price > 0 ? " e está a aguardar pagamento" : ""}.</p>`
-  );
+  // Confirmação ao próprio jogador, conforme as preferências do clube (email/SMS).
+  await notifyPlayers({
+    clubId: comp.clubId,
+    event: "registration",
+    playerIds: [me.id],
+    message: `A tua inscrição no torneio "${comp.name}" foi registada${price > 0 ? " e está a aguardar pagamento" : ""}.`,
+    subject: "Inscrição confirmada · PadelZone",
+  });
 
   revalidatePath("/inscricoes");
   revalidatePath("/inicio");

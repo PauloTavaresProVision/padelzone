@@ -127,6 +127,8 @@ model Club {
   mapsUrl      String?
   services     String?
   photos       String[] @default([])
+  wesenderApiKey String?
+  notifyPrefs    Json?
   status       ClubStatus @default(PENDING)
   accessStart  DateTime?
   accessEnd    DateTime?

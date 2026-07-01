@@ -58,11 +58,13 @@ export async function submitResult(_prev: ResultState, formData: FormData): Prom
         for (const p of s.players) ids.push(p.playerId);
       }
       const score = sets.map((x) => `${x.a}-${x.b}`).join(" ");
-      await notifyPlayers(
-        ids,
-        `O resultado do teu jogo (${done.stage.category.name}, ${done.stage.category.competition.name}) foi registado: ${score}.`,
-        "Resultado registado · PadelZone",
-      );
+      await notifyPlayers({
+        clubId,
+        event: "result",
+        playerIds: ids,
+        message: `O resultado do teu jogo (${done.stage.category.name}, ${done.stage.category.competition.name}) foi registado: ${score}.`,
+        subject: "Resultado registado · PadelZone",
+      });
     }
   } catch {
     /* notificação não bloqueia */

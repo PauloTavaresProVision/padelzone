@@ -44,7 +44,7 @@ export async function scheduleMatch(formData: FormData) {
         where: { id: matchId },
         include: {
           court: { select: { name: true } },
-          stage: { select: { category: { select: { name: true, competition: { select: { name: true } } } } } },
+          stage: { select: { category: { select: { name: true, competition: { select: { name: true, clubId: true } } } } } },
           sides: { include: { team: true, players: { select: { playerId: true } } } },
         },
       });
@@ -56,11 +56,13 @@ export async function scheduleMatch(formData: FormData) {
         }
         const when = new Intl.DateTimeFormat("pt-PT", { timeZone: "UTC", weekday: "long", day: "2-digit", month: "long", hour: "2-digit", minute: "2-digit" }).format(full.scheduledAt);
         const court = full.court?.name ? ` (${full.court.name})` : "";
-        await notifyPlayers(
-          ids,
-          `O teu jogo (${full.stage.category.name}, ${full.stage.category.competition.name}) está marcado para ${when}${court}.`,
-          "Jogo agendado · PadelZone",
-        );
+        await notifyPlayers({
+          clubId: full.stage.category.competition.clubId,
+          event: "schedule",
+          playerIds: ids,
+          message: `O teu jogo (${full.stage.category.name}, ${full.stage.category.competition.name}) está marcado para ${when}${court}.`,
+          subject: "Jogo agendado · PadelZone",
+        });
       }
     } catch {
       /* notificação não bloqueia */

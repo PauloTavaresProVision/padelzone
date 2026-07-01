@@ -1,10 +1,13 @@
 import { notFound } from "next/navigation";
-import { Trash2, Building2, Phone, Users, Globe, Image as ImageIcon, X } from "lucide-react";
+import { Trash2, Building2, Phone, Users, Globe, Image as ImageIcon, X, Bell } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { getMyClub, getClub } from "@/server/clubs";
-import { updateClub, addMember, updateMemberRole, removeMember, addClubPhoto, removeClubPhoto, cancelInvite } from "@/server/actions/clubs";
+import { updateClub, updateClubNotifications, addMember, updateMemberRole, removeMember, addClubPhoto, removeClubPhoto, cancelInvite } from "@/server/actions/clubs";
 import { ClubLogoField } from "@/components/club-logo-field";
 import { PageHeader } from "@/components/page-header";
+import { SaveButton } from "@/components/save-button";
+import { prisma } from "@/lib/prisma";
+import { NOTIFY_EVENTS, resolvePrefs } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +54,7 @@ export default async function AdminDefinicoesPage() {
   if (!my) notFound();
   const club = await getClub(my.slug);
   if (!club) notFound();
+  const notif = await prisma.club.findUnique({ where: { id: club.id }, select: { wesenderApiKey: true, notifyPrefs: true } });
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
@@ -144,6 +148,50 @@ export default async function AdminDefinicoesPage() {
           <button type="submit" className={primaryBtn}>Guardar alterações</button>
         </div>
       </form>
+
+      {/* Notificações */}
+      <section className={card}>
+        <SectionHead icon={Bell} title="Notificações" desc="Que avisos enviar e por que canal. Email sai pela conta PadelZone; SMS pela conta WeSender do clube." />
+        <form action={updateClubNotifications} className="space-y-4">
+          <input type="hidden" name="clubId" value={club.id} />
+          <div>
+            <label className={label}>Chave WeSender do clube (SMS)</label>
+            <input name="wesenderApiKey" defaultValue={notif?.wesenderApiKey ?? ""} placeholder="Deixa vazio para usar a conta da plataforma" className={field} />
+            <p className="mt-1 text-xs text-soft">Os SMS saem por esta conta WeSender. Sem chave, usa a da plataforma.</p>
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-line">
+            <table className="w-full min-w-[420px] text-sm">
+              <thead className="bg-surface-soft text-xs text-muted">
+                <tr>
+                  <th className="p-2.5 text-left font-semibold">Evento</th>
+                  <th className="p-2.5 text-center font-semibold">Ativar</th>
+                  <th className="p-2.5 text-center font-semibold">Email</th>
+                  <th className="p-2.5 text-center font-semibold">SMS</th>
+                  <th className="p-2.5 text-center font-semibold text-soft">WhatsApp</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {NOTIFY_EVENTS.map(({ key, label: evLabel }) => {
+                  const p = resolvePrefs(notif?.notifyPrefs, key);
+                  return (
+                    <tr key={key}>
+                      <td className="p-2.5 font-medium text-zinc-900">{evLabel}</td>
+                      <td className="p-2.5 text-center"><input type="checkbox" name={`pref_${key}_enabled`} defaultChecked={p.enabled} className="size-4 accent-brand-purple" /></td>
+                      <td className="p-2.5 text-center"><input type="checkbox" name={`pref_${key}_email`} defaultChecked={p.email} className="size-4 accent-brand-purple" /></td>
+                      <td className="p-2.5 text-center"><input type="checkbox" name={`pref_${key}_sms`} defaultChecked={p.sms} className="size-4 accent-brand-purple" /></td>
+                      <td className="p-2.5 text-center"><input type="checkbox" disabled title="Em breve" className="size-4 accent-brand-purple opacity-40" /></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-soft">WhatsApp fica disponível em breve. Se um evento não estiver ativo, não envia por nenhum canal.</p>
+          <div className="flex justify-end">
+            <SaveButton className={primaryBtn}>Guardar notificações</SaveButton>
+          </div>
+        </form>
+      </section>
 
       {/* Fotos do clube */}
       <section className={card}>
