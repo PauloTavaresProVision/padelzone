@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { Trash2, Building2, Phone, Users, Globe, Image as ImageIcon, X, Bell } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { getMyClub, getClub } from "@/server/clubs";
@@ -30,6 +31,13 @@ const ASSIGNABLE_ROLES = [
   { value: "PLAYER", label: "Jogador" },
 ];
 
+const TABS = [
+  { key: "perfil", label: "Perfil", icon: Building2 },
+  { key: "notificacoes", label: "Notificações", icon: Bell },
+  { key: "fotos", label: "Fotos", icon: ImageIcon },
+  { key: "membros", label: "Membros", icon: Users },
+];
+
 function initials(name: string) {
   return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 }
@@ -48,13 +56,15 @@ function SectionHead({ icon: Icon, title, desc }: { icon: React.ComponentType<{ 
   );
 }
 
-export default async function AdminDefinicoesPage() {
+export default async function AdminDefinicoesPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const sp = await searchParams;
   const user = await getCurrentUser();
   const my = await getMyClub(user!.id);
   if (!my) notFound();
   const club = await getClub(my.slug);
   if (!club) notFound();
   const notif = await prisma.club.findUnique({ where: { id: club.id }, select: { wesenderApiKey: true, notifyPrefs: true } });
+  const tab = TABS.some((t) => t.key === sp.tab) ? sp.tab! : "perfil";
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
@@ -67,6 +77,23 @@ export default async function AdminDefinicoesPage() {
         ]}
       />
 
+      {/* Separadores */}
+      <div className="flex flex-wrap gap-1.5">
+        {TABS.map((t) => {
+          const active = t.key === tab;
+          return (
+            <Link
+              key={t.key}
+              href={`?tab=${t.key}`}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${active ? "pz-gradient text-white shadow" : "border border-line bg-surface text-muted hover:bg-surface-soft"}`}
+            >
+              <t.icon className="size-4" /> {t.label}
+            </Link>
+          );
+        })}
+      </div>
+
+      {tab === "perfil" && (
       <form action={updateClub} className="space-y-5">
         <input type="hidden" name="clubId" value={club.id} />
 
@@ -148,8 +175,9 @@ export default async function AdminDefinicoesPage() {
           <button type="submit" className={primaryBtn}>Guardar alterações</button>
         </div>
       </form>
+      )}
 
-      {/* Notificações */}
+      {tab === "notificacoes" && (
       <section className={card}>
         <SectionHead icon={Bell} title="Notificações" desc="Que avisos enviar e por que canal. Email sai pela conta PadelZone; SMS pela conta WeSender do clube." />
         <form action={updateClubNotifications} className="space-y-4">
@@ -192,8 +220,9 @@ export default async function AdminDefinicoesPage() {
           </div>
         </form>
       </section>
+      )}
 
-      {/* Fotos do clube */}
+      {tab === "fotos" && (
       <section className={card}>
         <SectionHead icon={ImageIcon} title="Fotos do clube" desc="Mostra os campos e o ambiente na página pública." />
         {club.photos.length > 0 && (
@@ -219,8 +248,9 @@ export default async function AdminDefinicoesPage() {
           <button type="submit" className={`${primaryBtn} shrink-0`}>Adicionar foto</button>
         </form>
       </section>
+      )}
 
-      {/* Membros */}
+      {tab === "membros" && (
       <section className={card}>
         <SectionHead icon={Users} title="Membros & permissões" desc="Quem pode gerir o clube e que função tem." />
 
@@ -298,6 +328,7 @@ export default async function AdminDefinicoesPage() {
         )}
         <p className="mt-3 text-xs text-soft">Se a pessoa ainda não tiver conta, recebe um convite por email com um link para se registar e juntar ao clube.</p>
       </section>
+      )}
     </div>
   );
 }
