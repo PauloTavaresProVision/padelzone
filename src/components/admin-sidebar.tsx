@@ -24,13 +24,13 @@ export function AdminSidebar({ clubName, clubCity, userName }: { clubName: strin
   const isActive = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col gap-4 border-r border-line bg-surface p-5 lg:flex">
-      <Link href="/admin" className="flex justify-center pt-1">
+    <aside className="no-scrollbar hidden w-64 shrink-0 flex-col gap-3 border-r border-line bg-surface p-4 lg:flex lg:sticky lg:top-0 lg:max-h-screen lg:self-start lg:overflow-y-auto">
+      <Link href="/admin" className="flex justify-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/padelzone-logo-trim.png" alt="PadelZone" className="h-12 w-auto" />
+        <img src="/padelzone-logo-trim.png" alt="PadelZone" className="h-9 w-auto" />
       </Link>
 
-      <div className="pz-shadow-soft rounded-[18px] border border-line bg-surface p-4">
+      <div className="pz-shadow-soft rounded-2xl border border-line bg-surface p-3">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-soft">Clube</p>
         <p className="mt-0.5 truncate text-sm font-bold text-zinc-900">{clubName}</p>
         {clubCity && (
@@ -47,7 +47,7 @@ export function AdminSidebar({ clubName, clubCity, userName }: { clubName: strin
             <Link
               key={href}
               href={href}
-              className={`flex h-11 items-center gap-3 rounded-xl px-4 text-sm font-medium transition ${
+              className={`flex h-9 items-center gap-3 rounded-xl px-3.5 text-sm font-medium transition ${
                 active ? "pz-gradient pz-shadow-soft text-white" : "text-muted hover:bg-surface-soft"
               }`}
             >
