@@ -109,6 +109,15 @@ export default async function DefinicoesPage({ params }: { params: Promise<{ id:
               <input type="datetime-local" name="regCloseAt" defaultValue={dt(comp.regCloseAt)} className={field} />
             </div>
           </div>
+          <div className="rounded-lg border border-line p-3">
+            <label className={label}>Prazo para pagar a reserva (horas)</label>
+            <input type="number" name="paymentHoldHours" min={1} defaultValue={comp.paymentHoldHours ?? ""} placeholder="Sem prazo" className={field} />
+            <label className="mt-2.5 flex items-center gap-2 text-sm text-zinc-700">
+              <input type="checkbox" name="paymentHoldCancel" defaultChecked={comp.paymentHoldCancel} className="size-4 accent-brand-purple" />
+              Ao expirar, libertar a vaga e cancelar (tem de reinscrever para pagar)
+            </label>
+            <p className="mt-1 text-xs text-soft">Vale para referência e transferência (o Express é instantâneo). Sem prazo, a reserva não expira.</p>
+          </div>
           <div>
             <label className={label}>Foto do torneio</label>
             {comp.imageUrl && (

@@ -260,6 +260,8 @@ model Competition {
   rules       String?
   applRanked  Boolean  @default(false) // conta para o ranking oficial APPL
   applType    String?                  // tipo de prova APPL (Open 2.000/5.000/10.000, Campeonato, Masters, Liga)
+  paymentHoldHours  Int?               // prazo (horas) para pagar a reserva; null = sem prazo
+  paymentHoldCancel Boolean @default(false) // ao expirar, liberta a vaga E bloqueia o pagamento (tem de reinscrever)
   createdAt   DateTime @default(now())
   club        Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
   categories  Category[]

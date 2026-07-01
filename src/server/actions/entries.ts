@@ -92,8 +92,18 @@ export async function registerSelf(_prev: EntryState, formData: FormData): Promi
     if (mine) return { error: `Já estás inscrito em ${mine.category.name} neste torneio. Só podes jogar uma categoria por torneio (os mistos são à parte). Cancela essa inscrição para mudares.` };
   }
 
+  // Lotação: as reservas (PENDING) por pagar contam para a vaga, exceto as expiradas
+  // (se o torneio tiver prazo de reserva), que libertam a vaga para outros.
+  const holdH = comp.paymentHoldHours;
+  const cutoff = holdH ? new Date(Date.now() - holdH * 3600000) : null;
   const count = await prisma.entry.count({
-    where: { categoryId, status: { in: ["PENDING", "CONFIRMED"] } },
+    where: {
+      categoryId,
+      OR: [
+        { status: "CONFIRMED" },
+        { status: "PENDING", ...(cutoff ? { createdAt: { gte: cutoff } } : {}) },
+      ],
+    },
   });
   const status = category.maxEntries && count >= category.maxEntries ? "WAITLIST" : "PENDING";
 

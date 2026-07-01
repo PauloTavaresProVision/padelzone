@@ -113,6 +113,8 @@ export async function updateCompetition(formData: FormData) {
       regCloseAt: toDate(formData.get("regCloseAt")),
       applRanked: formData.get("applRanked") === "on",
       applType: (formData.get("applRanked") === "on" && String(formData.get("applType") ?? "").trim()) || null,
+      paymentHoldHours: (() => { const n = parseInt(String(formData.get("paymentHoldHours") ?? ""), 10); return Number.isFinite(n) && n > 0 ? n : null; })(),
+      paymentHoldCancel: formData.get("paymentHoldCancel") === "on",
     },
   });
   const imageUrl = await saveImage(formData.get("image"), "competitions");

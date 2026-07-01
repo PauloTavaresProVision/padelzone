@@ -21,6 +21,8 @@ const METHOD: Record<string, string> = {
   AFRICELL_MONEY: "Africell Money",
   CASH: "Numerário",
 };
+const fmtHold = (iso: string) =>
+  new Intl.DateTimeFormat("pt-PT", { timeZone: "Africa/Luanda", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
 export default async function PagamentosPage({ searchParams }: { searchParams: Promise<{ pay?: string }> }) {
   const { pay } = await searchParams;
@@ -66,6 +68,13 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
                       </p>
                     ) : (
                       <>
+                        {p.reservedUntil && (
+                          new Date(p.reservedUntil).getTime() > Date.now() ? (
+                            <p className="mb-2 text-xs font-medium text-warning">Reserva válida até {fmtHold(p.reservedUntil)}. Paga até lá para garantir a vaga.</p>
+                          ) : (
+                            <p className="mb-2 text-xs font-medium text-danger">Reserva expirada.</p>
+                          )
+                        )}
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className="text-xs text-muted">{p.status === "FAILED" ? "O pagamento falhou. Podes tentar de novo." : "Escolhe como pagar."}</span>
                           <PaymentChoice entryId={p.entryId} full={p.full} autoOpen={p.entryId === payEntryId} reference={p.referenceEnabled} express={p.expressEnabled} transfer={p.transferEnabled} iban={p.iban} ibanName={p.ibanName} amount={p.amount} />

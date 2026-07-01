@@ -23,6 +23,12 @@ async function loadOwnedEntry(entryId: number, userId: number) {
 
 // Bloqueia o pagamento se a categoria já está cheia (já não há vaga para esta inscrição).
 async function assertNotFull(entry: Awaited<ReturnType<typeof loadOwnedEntry>>) {
+  const comp = entry.category.competition;
+  // Reserva com prazo: no modo "cancelar", uma reserva expirada já não pode ser paga.
+  if (comp.paymentHoldHours && comp.paymentHoldCancel && entry.status !== "CONFIRMED") {
+    const expiry = entry.createdAt.getTime() + comp.paymentHoldHours * 3600000;
+    if (Date.now() > expiry) throw new Error("A reserva expirou. Volta a inscrever-te para pagar.");
+  }
   const max = entry.category.maxEntries;
   if (max == null) return;
   const confirmed = await prisma.entry.count({ where: { categoryId: entry.categoryId, status: "CONFIRMED" } });

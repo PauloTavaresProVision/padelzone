@@ -143,6 +143,7 @@ export type MyPayment = {
   transferEnabled: boolean;
   iban: string | null;
   ibanName: string | null;
+  reservedUntil: string | null;
 };
 
 // Pagamentos das inscrições do jogador (pagos e pendentes), com indicação se a categoria já está cheia.
@@ -155,7 +156,7 @@ export async function getMyPayments(userId: number): Promise<MyPayment[]> {
     include: {
       competition: { select: { name: true } },
       club: { select: { proxypayEntityId: true, referenceEnabled: true, expressEnabled: true, transferEnabled: true, iban: true, ibanName: true } },
-      entry: { include: { category: { select: { id: true, name: true, maxEntries: true } } } },
+      entry: { include: { category: { select: { id: true, name: true, maxEntries: true, competition: { select: { paymentHoldHours: true, paymentHoldCancel: true } } } } } },
     },
   });
 
@@ -167,6 +168,8 @@ export async function getMyPayments(userId: number): Promise<MyPayment[]> {
     const cat = p.entry?.category;
     const max = cat?.maxEntries ?? null;
     const conf = cat ? confirmed.get(cat.id) ?? 0 : 0;
+    const holdH = cat?.competition?.paymentHoldHours ?? null;
+    const reservedUntil = holdH && p.status !== "PAID" && p.entry?.createdAt ? new Date(p.entry.createdAt.getTime() + holdH * 3600000).toISOString() : null;
     return {
       id: p.id,
       entryId: p.entryId,
@@ -183,6 +186,7 @@ export async function getMyPayments(userId: number): Promise<MyPayment[]> {
       transferEnabled: p.club.transferEnabled,
       iban: p.club.iban,
       ibanName: p.club.ibanName,
+      reservedUntil,
     };
   });
 }
