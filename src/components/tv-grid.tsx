@@ -34,13 +34,13 @@ function Team({ names, scores, winner, dim }: { names: string[]; scores: number[
     <div className="flex items-center justify-between gap-2">
       <div className="min-w-0">
         {names.map((p, i) => (
-          <p key={i} className={`truncate text-[15px] leading-tight ${winner ? "font-extrabold text-zinc-900" : dim ? "font-medium text-zinc-400" : "font-semibold text-zinc-800"}`}>{p}</p>
+          <p key={i} className={`truncate text-[16px] leading-tight ${winner ? "font-extrabold text-zinc-900" : dim ? "font-medium text-zinc-400" : "font-semibold text-zinc-800"}`}>{p}</p>
         ))}
       </div>
       {scores && scores.length > 0 && (
         <div className="flex shrink-0 gap-1">
           {scores.map((n, i) => (
-            <span key={i} className={`grid size-7 place-items-center rounded-md font-mono text-base font-extrabold ${winner ? "bg-brand-purple text-white" : "bg-zinc-100 text-zinc-400"}`}>{n}</span>
+            <span key={i} className={`grid size-8 place-items-center rounded-md font-mono text-lg font-extrabold ${winner ? "bg-brand-purple text-white" : "bg-zinc-100 text-zinc-400"}`}>{n}</span>
           ))}
         </div>
       )}
@@ -108,20 +108,20 @@ export function TvGrid({ courts, times, cells, currentKey }: { courts: Court[]; 
       <div
         className="grid min-h-0 flex-1 gap-2"
         style={{
-          gridTemplateColumns: `3.5rem repeat(${page.length}, minmax(0,1fr))`,
+          gridTemplateColumns: `5rem repeat(${page.length}, minmax(0,1fr))`,
           gridTemplateRows: `auto repeat(${times.length}, minmax(0,1fr))`,
         }}
       >
         <div />
         {page.map((c) => (
-          <div key={c.id} className="pz-shadow-card flex items-center justify-center rounded-lg border border-line bg-surface px-2 py-2 text-center text-lg font-extrabold text-zinc-900">
+          <div key={c.id} className="pz-shadow-card flex items-center justify-center rounded-lg border border-line bg-surface px-3 py-2.5 text-center text-2xl font-extrabold text-zinc-900">
             <span className="truncate">{c.name}</span>
           </div>
         ))}
 
         {times.map((tk) => (
           <Fragment key={tk}>
-            <div className={`flex items-center justify-center text-xl font-extrabold ${tk === currentKey ? "text-brand-purple" : "text-zinc-500"}`}>{tk}</div>
+            <div className={`flex items-center justify-center text-3xl font-extrabold ${tk === currentKey ? "text-brand-purple" : "text-zinc-500"}`}>{tk}</div>
             {page.map((c) => {
               const g = cell(c.id, tk);
               return (

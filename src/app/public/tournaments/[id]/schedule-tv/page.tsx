@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { sideName } from "@/server/draw";
 import { TvControls } from "@/components/tv-controls";
 import { TvGrid } from "@/components/tv-grid";
+import { FitScreen } from "@/components/fit-screen";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,8 @@ const fmtDay = (key: string) =>
 type Sets = { a: number; b: number }[];
 
 // Quantas faixas horárias mostrar de cada vez (janela à volta do "agora").
-const WINDOW = 3;
+// A tela é fixa (1920x1080) e escala para o ecrã, por isso este número cabe sempre.
+const WINDOW = 5;
 
 export default async function ScheduleTvPage({
   params,
@@ -102,74 +104,76 @@ export default async function ScheduleTvPage({
   const host = h.get("host") ?? "localhost:3010";
   const proto = h.get("x-forwarded-proto") ?? "http";
   const publicUrl = `${proto}://${host}/public/tournaments/${comp.id}`;
-  const qr = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=10&data=${encodeURIComponent(publicUrl)}`;
+  const qr = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(publicUrl)}`;
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden" style={{ background: "linear-gradient(180deg,#ffffff 0%,#f1eefa 100%)" }}>
-      {/* Cabeçalho */}
-      <header className="pz-gradient flex shrink-0 items-center justify-between gap-6 px-8 py-4 text-white">
-        <div className="flex min-w-0 items-center gap-4">
-          <div className="grid shrink-0 place-items-center rounded-xl bg-white px-3 py-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/padelzone-logo.png" alt="PadelZone" className="h-7" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="truncate text-3xl font-extrabold leading-tight">{comp.name}</h1>
-            <p className="truncate text-sm text-white/80">{comp.club.name}{comp.club.city ? ` · ${comp.club.city}` : ""}</p>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-6">
-          <div className="text-right">
-            <p className="text-xl font-bold capitalize leading-tight">{selDay ? fmtDay(selDay) : "—"}</p>
-            <p className="mt-0.5 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] text-white/85">
-              <span className="size-2 animate-pulse rounded-full bg-white" /> Em direto
-            </p>
-          </div>
-          <TvControls refreshSeconds={45} />
-        </div>
-      </header>
-
-      {/* Grelha campo × hora (com rotação pelos campos) */}
-      <main className="min-h-0 flex-1 overflow-hidden p-4 sm:p-6">
-        {cells.length === 0 ? (
-          <div className="grid h-full place-items-center">
-            <div className="text-center">
-              <p className="text-3xl font-extrabold text-zinc-900">Sem jogos para mostrar</p>
-              <p className="mt-1 text-lg text-muted">Assim que houver jogos agendados, aparecem aqui.</p>
+    <FitScreen>
+      <div className="flex h-[1080px] w-[1920px] flex-col overflow-hidden" style={{ background: "linear-gradient(180deg,#ffffff 0%,#f1eefa 100%)" }}>
+        {/* Cabeçalho */}
+        <header className="pz-gradient flex shrink-0 items-center justify-between gap-8 px-12 py-5 text-white">
+          <div className="flex min-w-0 items-center gap-5">
+            <div className="grid shrink-0 place-items-center rounded-2xl bg-white px-4 py-2.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/padelzone-logo.png" alt="PadelZone" className="h-10" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate text-5xl font-black leading-none tracking-tight">{comp.name}</h1>
+              <p className="mt-1.5 truncate text-xl text-white/80">{comp.club.name}{comp.club.city ? ` · ${comp.club.city}` : ""}</p>
             </div>
           </div>
-        ) : (
-          <TvGrid courts={courtList} times={times} cells={cells} currentKey={currentKey} />
-        )}
-      </main>
-
-      {/* Rodapé com dias e QR */}
-      <footer className="flex shrink-0 items-center justify-between gap-4 border-t border-line bg-surface px-8 py-3">
-        <div className="flex items-center gap-3">
-          {days.length > 1 && (
-            <div className="flex flex-wrap gap-1.5">
-              {days.map((d) => (
-                <a
-                  key={d}
-                  href={`?day=${d}`}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-bold capitalize transition ${d === selDay ? "pz-gradient text-white" : "bg-surface-soft text-muted hover:text-zinc-900"}`}
-                >
-                  {new Intl.DateTimeFormat("pt-PT", { timeZone: "UTC", weekday: "short", day: "2-digit" }).format(new Date(d + "T12:00:00Z"))}
-                </a>
-              ))}
+          <div className="flex shrink-0 items-center gap-8">
+            <div className="text-right">
+              <p className="text-2xl font-bold capitalize leading-tight">{selDay ? fmtDay(selDay) : "—"}</p>
+              <p className="mt-1 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.25em] text-white/85">
+                <span className="size-2.5 animate-pulse rounded-full bg-white" /> Em direto
+              </p>
             </div>
+            <TvControls refreshSeconds={45} />
+          </div>
+        </header>
+
+        {/* Grelha campo × hora (com rotação pelos campos) */}
+        <main className="min-h-0 flex-1 overflow-hidden px-12 py-6">
+          {cells.length === 0 ? (
+            <div className="grid h-full place-items-center">
+              <div className="text-center">
+                <p className="text-5xl font-black text-zinc-900">Sem jogos para mostrar</p>
+                <p className="mt-3 text-2xl text-muted">Assim que houver jogos agendados, aparecem aqui.</p>
+              </div>
+            </div>
+          ) : (
+            <TvGrid courts={courtList} times={times} cells={cells} currentKey={currentKey} />
           )}
-          <p className="text-sm text-soft">Atualiza e roda automaticamente</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <p className="text-right text-sm font-semibold text-muted">
-            Segue no telemóvel<br />
-            <span className="font-normal text-soft">aponta a câmara</span>
-          </p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qr} alt="QR" className="size-16 rounded-lg border border-line bg-white p-1" />
-        </div>
-      </footer>
-    </div>
+        </main>
+
+        {/* Rodapé com dias e QR */}
+        <footer className="flex shrink-0 items-center justify-between gap-6 border-t border-line bg-surface px-12 py-4">
+          <div className="flex items-center gap-4">
+            {days.length > 1 && (
+              <div className="flex flex-wrap gap-2">
+                {days.map((d) => (
+                  <a
+                    key={d}
+                    href={`?day=${d}`}
+                    className={`rounded-xl px-4 py-2 text-lg font-bold capitalize transition ${d === selDay ? "pz-gradient text-white" : "bg-surface-soft text-muted hover:text-zinc-900"}`}
+                  >
+                    {new Intl.DateTimeFormat("pt-PT", { timeZone: "UTC", weekday: "short", day: "2-digit" }).format(new Date(d + "T12:00:00Z"))}
+                  </a>
+                ))}
+              </div>
+            )}
+            <p className="text-lg text-soft">Atualiza e roda automaticamente</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <p className="text-right text-lg font-semibold text-muted">
+              Segue no telemóvel<br />
+              <span className="text-base font-normal text-soft">aponta a câmara</span>
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={qr} alt="QR" className="size-20 rounded-xl border border-line bg-white p-1.5" />
+          </div>
+        </footer>
+      </div>
+    </FitScreen>
   );
 }
