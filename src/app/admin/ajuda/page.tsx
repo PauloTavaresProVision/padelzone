@@ -58,6 +58,7 @@ function Section({
 }
 
 const ul = "list-disc space-y-1.5 pl-5 marker:text-brand-purple";
+const h3 = "pt-1 text-sm font-bold text-zinc-900";
 
 export default function AjudaPage() {
   return (
@@ -119,6 +120,10 @@ export default function AjudaPage() {
           Um jogador só pode entrar numa categoria de género por torneio, ou seja, ou num masculino ou num feminino, mas pode
           juntar-se também a um misto. Para trocar de categoria, cancela a inscrição atual e inscreve-se na nova.
         </p>
+        <p>
+          É no separador Categorias do torneio que defines, para cada categoria, o formato, o número de grupos, quantas duplas
+          apuram e se usa cabeças de série. O que cada uma dessas opções faz está explicado em Sorteio.
+        </p>
       </Section>
 
       <Section id="inscricoes" icon={ClipboardList} title="Inscrições">
@@ -137,30 +142,84 @@ export default function AjudaPage() {
       </Section>
 
       <Section id="sorteio" icon={Shuffle} title="Sorteio">
-        <p>O sorteio distribui as duplas pelo quadro ou pelos grupos da categoria. O formato manda:</p>
+        <p>
+          O sorteio distribui as duplas pelo quadro ou pelos grupos da categoria. Cada categoria sorteia com o seu formato, que
+          defines no separador Categorias do torneio.
+        </p>
+
+        <h3 className={h3}>Escolher o formato</h3>
         <ul className={ul}>
-          <li><b>Eliminatórias:</b> quadro direto, quem perde sai.</li>
-          <li><b>Grupos + Eliminatórias:</b> primeiro uma fase de grupos e, no fim, os melhores de cada grupo passam a um quadro final.</li>
-          <li><b>Liga:</b> todos jogam contra todos.</li>
+          <li><b>Eliminatórias:</b> quadro direto, quem perde sai. Rápido, bom para muitas duplas ou pouco tempo.</li>
+          <li><b>Grupos + Eliminatórias:</b> primeiro uma fase de grupos (todos contra todos dentro do grupo) e, no fim, os melhores passam a um quadro final. Dá mais jogos a cada dupla. É o formato mais usado.</li>
+          <li><b>Liga:</b> todos contra todos, sem eliminatória. Para poucas duplas ou provas por pontos.</li>
+        </ul>
+
+        <h3 className={h3}>Cabeças de série</h3>
+        <p>
+          Servem para as melhores duplas não se cruzarem logo no início. Sem elas, o sorteio é todo à sorte e as duas
+          favoritas podem calhar no mesmo jogo à primeira ronda. Ligam-se em dois passos:
+        </p>
+        <ul className={ul}>
+          <li>Na categoria (separador Categorias), ativa <b>Tem cabeças de série</b>.</li>
+          <li>Nas <b>Inscrições</b>, dá um número às duplas mais fortes: 1 à melhor, 2 à segunda, e assim adiante. As duplas sem número entram na mesma, ficam é distribuídas à sorte pelos lugares que sobram.</li>
         </ul>
         <p>
-          Por defeito o sorteio é aleatório. Se a categoria usar cabeças de série, as duplas mais fortes (as que marcaste nas
-          inscrições) são separadas no quadro, para só se poderem cruzar nas fases finais.
+          Com esses números, o sistema afasta as favoritas. No quadro, a cabeça de série 1 e a 2 vão para metades opostas (só
+          se cruzam na final), a 3 e a 4 para quartos opostos, e por aí adiante. Nos grupos, espalha uma cabeça de série por
+          grupo (a 1 no Grupo A, a 2 no B, e por diante), para nenhum grupo ficar com duas favoritas.
         </p>
         <p>
-          Nos formatos com grupos, o sorteio começa só pela fase de grupos. O quadro final é gerado depois, já com os
-          apurados reais. Aí escolhes quantas duplas passam, e o apuramento é feito por ordem: primeiro todos os primeiros
-          classificados dos grupos, depois os segundos e, se ainda faltarem duplas para encher o quadro, os melhores
-          terceiros, quartos, e por aí adiante, comparados entre todos os grupos por pontos, diferença de sets e diferença de
-          jogos. Ao montar esse quadro, as duplas do mesmo grupo ficam afastadas, para não haver revanche logo na primeira
-          ronda.
+          Não precisas de numerar todas as duplas. O mínimo útil é dar número às 2 melhores; num quadro grande, faz sentido
+          numerar 4 ou 8. Se não usares cabeças de série, o sorteio é 100% aleatório.
+        </p>
+
+        <h3 className={h3}>Número de grupos e quantas passam</h3>
+        <p>Nos formatos com grupos, defines na categoria dois valores:</p>
+        <ul className={ul}>
+          <li><b>Nº de grupos:</b> em quantos grupos dividir as duplas.</li>
+          <li><b>Apurados por grupo:</b> quantas passam de cada grupo (no mínimo 1, o vencedor). Serve de sugestão para o tamanho do quadro final, que ainda podes ajustar na hora.</li>
+        </ul>
+        <p>A regra prática é fazer grupos de 3 ou 4 duplas:</p>
+        <ul className={ul}>
+          <li>8 duplas: 2 grupos de 4.</li>
+          <li>12 duplas: 3 grupos de 4, ou 4 grupos de 3.</li>
+          <li>16 duplas: 4 grupos de 4.</li>
+        </ul>
+        <p>
+          Grupos de 3 dão menos jogos (cada dupla joga 2); grupos de 4 dão mais jogos (cada uma joga 3) e uma classificação
+          mais justa. O sistema aceita no máximo metade das duplas em grupos, porque cada grupo precisa de pelo menos 2.
+        </p>
+
+        <h3 className={h3}>Como se faz o apuramento</h3>
+        <p>
+          A fase de grupos sorteia-se sozinha; o quadro final só se monta depois de os grupos estarem jogados, com os apurados
+          reais. Aí escolhes o tamanho do quadro. O ideal é um número redondo: 4, 8 ou 16.
         </p>
         <p>
-          Se quiseres fazer o sorteio à frente do público, há um modo ao vivo que revela as duplas categoria a categoria, com
-          o organizador a carregar no botão para todos verem que é transparente. As ações que apagam um sorteio pedem sempre
-          confirmação, e existe um "Recomeçar" caso precises de repetir tudo.
+          O apuramento é cruzado entre todos os grupos, por esta ordem: primeiro todos os primeiros classificados, depois todos
+          os segundos e, se ainda faltarem duplas para encher o quadro, os melhores terceiros, quartos e por aí, comparados
+          entre grupos por vitórias, diferença de jogos e diferença de sets.
         </p>
-        <p>Atenção a um ponto importante: lançar o sorteio inicia o torneio. Se estava oculto ou em inscrições, passa a "Em curso" e fica visível.</p>
+        <p>
+          Por exemplo, com 4 grupos e um quadro de 8 passam os 4 vencedores e os 4 segundos. Se fizeres um quadro de 6, passam
+          os 4 primeiros e os 2 melhores segundos.
+        </p>
+        <p>
+          Ao montar o quadro, as duplas do mesmo grupo ficam afastadas: os vencedores vão para as cabeças do quadro e nenhum
+          jogo da primeira ronda é entre duas duplas que já se defrontaram nos grupos.
+        </p>
+        <p>
+          Se na última vaga houver um empate total (duas duplas iguais por todos os critérios, em que uma apuraria e a outra
+          não), o sistema avisa e deixa-te resolver à mão, trocando a dupla apurada pela empatada antes de o quadro começar.
+        </p>
+
+        <h3 className={h3}>Sorteio ao vivo</h3>
+        <p>
+          Se quiseres fazer o sorteio à frente do público, há um modo ao vivo que revela as duplas categoria a categoria, com o
+          organizador a carregar no botão. As ações que apagam um sorteio pedem sempre confirmação, e existe um "Recomeçar"
+          caso precises de repetir tudo.
+        </p>
+        <p>Um ponto importante: lançar o sorteio inicia o torneio. Se estava oculto ou em inscrições, passa a "Em curso" e fica visível.</p>
       </Section>
 
       <Section id="calendario" icon={CalendarDays} title="Calendário e campos">
