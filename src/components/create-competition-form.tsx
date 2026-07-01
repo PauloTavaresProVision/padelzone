@@ -99,9 +99,9 @@ export function CreateCompetitionForm({ clubId, templates }: { clubId: number; t
         </div>
         {format !== "KNOCKOUT" && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div><label className={labelCls}>Nº de grupos</label><input type="number" name="numGroups" min={1} defaultValue={2} className={fieldCls} /></div>
+            <div><label className={labelCls}>Nº de grupos</label><input type="number" name="numGroups" min={1} defaultValue={2} className={fieldCls} /><p className="mt-1 text-xs text-soft">Em quantos grupos dividir as duplas (todos contra todos dentro do grupo).</p></div>
             {format === "GROUPS_KNOCKOUT" && (
-              <div><label className={labelCls}>Apuram por grupo</label><input type="number" name="qualifiersPerGroup" min={1} defaultValue={2} className={fieldCls} /></div>
+              <div><label className={labelCls}>Apuram por grupo</label><input type="number" name="qualifiersPerGroup" min={1} defaultValue={2} className={fieldCls} /><p className="mt-1 text-xs text-soft">Quantas duplas de cada grupo passam ao quadro final.</p></div>
             )}
           </div>
         )}
