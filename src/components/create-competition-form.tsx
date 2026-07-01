@@ -57,6 +57,7 @@ export function CreateCompetitionForm({ clubId, templates }: { clubId: number; t
           <div><label className={labelCls}>Fim</label><input type="date" name="endDate" className={fieldCls} /></div>
           <div><label className={labelCls}>Abertura das inscrições</label><input type="datetime-local" name="regOpenAt" className={fieldCls} /></div>
           <div><label className={labelCls}>Fecho das inscrições</label><input type="datetime-local" name="regCloseAt" className={fieldCls} /></div>
+          <div><label className={labelCls}>Prazo para pagar a reserva (horas)</label><input type="number" name="paymentHoldHours" min={1} placeholder="Sem prazo" className={fieldCls} /></div>
         </div>
       </div>
 
