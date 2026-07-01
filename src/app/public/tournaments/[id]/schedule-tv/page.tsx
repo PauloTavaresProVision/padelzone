@@ -7,7 +7,7 @@ import { TvControls } from "@/components/tv-controls";
 import { TvGrid } from "@/components/tv-grid";
 import { FitScreen } from "@/components/fit-screen";
 import { TvLive } from "@/components/tv-live";
-import { LayoutGrid, Radio, Smartphone } from "lucide-react";
+import { LayoutGrid, Radio } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -103,8 +103,7 @@ export default async function ScheduleTvPage({
       winner: g.winner,
     }));
 
-  const vista = sp.vista === "live" ? "live" : sp.vista === "vertical" ? "vertical" : "grelha";
-  const portrait = vista === "vertical";
+  const vista = sp.vista === "live" ? "live" : "grelha";
   const courtName = (cid: number) => courtList.find((c) => c.id === cid)?.name ?? "Campo";
   const liveItems = dayGames
     .filter((g) => g.status === "LIVE")
@@ -122,8 +121,8 @@ export default async function ScheduleTvPage({
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(publicUrl)}`;
 
   return (
-    <FitScreen width={portrait ? 1080 : 1920} height={portrait ? 1920 : 1080}>
-      <div className="flex flex-col overflow-hidden" style={{ width: portrait ? 1080 : 1920, height: portrait ? 1920 : 1080, background: "linear-gradient(180deg,#ffffff 0%,#f1eefa 100%)" }}>
+    <FitScreen>
+      <div className="flex h-[1080px] w-[1920px] flex-col overflow-hidden" style={{ background: "linear-gradient(180deg,#ffffff 0%,#f1eefa 100%)" }}>
         {/* Cabeçalho */}
         <header className="pz-gradient flex shrink-0 items-center justify-between gap-8 px-12 py-5 text-white">
           <div className="flex min-w-0 items-center gap-5">
@@ -132,7 +131,7 @@ export default async function ScheduleTvPage({
               <img src="/padelzone-logo.png" alt="PadelZone" className="h-10" />
             </div>
             <div className="min-w-0">
-              <h1 className={`truncate font-black leading-none tracking-tight ${portrait ? "text-4xl" : "text-5xl"}`}>{comp.name}</h1>
+              <h1 className="truncate text-5xl font-black leading-none tracking-tight">{comp.name}</h1>
               <p className="mt-1.5 truncate text-xl text-white/80">{comp.club.name}{comp.club.city ? ` · ${comp.club.city}` : ""}</p>
             </div>
           </div>
@@ -150,9 +149,6 @@ export default async function ScheduleTvPage({
               <Link href={`?day=${selDay ?? ""}&vista=live`} scroll={false} title="Ao vivo" className={`grid size-11 place-items-center transition ${vista === "live" ? "bg-white/25" : "text-white/70 hover:bg-white/10"}`}>
                 <Radio className="size-5" />
               </Link>
-              <Link href={`?day=${selDay ?? ""}&vista=vertical`} scroll={false} title="Vertical (telemóvel)" className={`grid size-11 place-items-center transition ${vista === "vertical" ? "bg-white/25" : "text-white/70 hover:bg-white/10"}`}>
-                <Smartphone className="size-5" />
-              </Link>
             </div>
             <TvControls refreshSeconds={45} />
           </div>
@@ -160,8 +156,8 @@ export default async function ScheduleTvPage({
 
         {/* Grelha campo × hora (com rotação pelos campos) */}
         <main className="min-h-0 flex-1 overflow-hidden px-12 py-6">
-          {portrait || vista === "live" ? (
-            <TvLive live={liveItems} upcoming={upcomingItems} cols={portrait ? 1 : 3} />
+          {vista === "live" ? (
+            <TvLive live={liveItems} upcoming={upcomingItems} />
           ) : cells.length === 0 ? (
             <div className="grid h-full place-items-center">
               <div className="text-center">

@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, RotateCcw, CheckCircle2, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, RotateCcw, CheckCircle2, Check, Smartphone } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { getMyClub } from "@/server/clubs";
 import { getCompetition } from "@/server/competitions";
-import { getCategoryStages, entryName } from "@/server/draw";
+import { getCategoryStages, entryName, sideName } from "@/server/draw";
 import { resetCompetitionDraw } from "@/server/actions/draw";
 import { LiveDrawButton } from "@/components/live-draw-button";
 import { ConfirmButton } from "@/components/confirm-button";
+import { SorteioVertical } from "@/components/sorteio-vertical";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,7 @@ export default async function AoVivoPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ i?: string }>;
+  searchParams: Promise<{ i?: string; apresentar?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -77,6 +78,33 @@ export default async function AoVivoPage({
   }
   const drawnCount = cats.filter((c) => c.stages.length > 0).length;
 
+  // Apresentação vertical (9:16) para direto/Instagram: um grupo/categoria de cada vez.
+  if (sp.apresentar === "1") {
+    type Slide = { cat: string; group: string; duplas: string[] };
+    const slides: Slide[] = [];
+    for (const c of cats) {
+      const gs = c.stages.find((s) => s.type === "GROUPS");
+      if (gs) {
+        for (const g of gs.groups) {
+          slides.push({ cat: c.cat.name, group: g.name, duplas: g.members.map((mem) => entryName(mem.entry)) });
+        }
+      } else {
+        const ko = c.stages.find((s) => s.type === "KNOCKOUT");
+        if (ko) {
+          const duplas: string[] = [];
+          for (const mt of ko.matches.filter((m) => m.round === 0)) {
+            for (const side of mt.sides) {
+              const nm = sideName(side);
+              if (nm && nm !== "—" && !nm.startsWith("Isento") && !nm.startsWith("Vencedor")) duplas.push(nm);
+            }
+          }
+          if (duplas.length) slides.push({ cat: c.cat.name, group: "Quadro", duplas });
+        }
+      }
+    }
+    return <SorteioVertical slides={slides} name={comp.name} exitHref={`/admin/torneios/${comp.id}/ao-vivo`} />;
+  }
+
   const i = Math.max(0, Math.min(parseInt(sp.i || "0", 10) || 0, total - 1));
   const cur = cats[i];
   const drawn = cur.stages.length > 0;
@@ -99,18 +127,23 @@ export default async function AoVivoPage({
       <style>{REVEAL_CSS}</style>
 
       {/* Barra superior */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Link href={`/admin/torneios/${comp.id}/sorteio`} className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition hover:text-zinc-900">
           <ArrowLeft className="size-4" /> Sair
         </Link>
-        {drawnCount > 0 && (
-          <form action={resetCompetitionDraw}>
-            <input type="hidden" name="competitionId" value={comp.id} />
-            <ConfirmButton message="ATENÇÃO: isto apaga TODOS os sorteios e resultados de TODAS as categorias. Tens a certeza?" className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted transition hover:bg-surface-soft">
-              <RotateCcw className="size-3.5" /> Recomeçar
-            </ConfirmButton>
-          </form>
-        )}
+        <div className="flex items-center gap-2">
+          <Link href="?apresentar=1" className="inline-flex items-center gap-1.5 rounded-lg border border-brand-purple/40 bg-primary-light px-3 py-1.5 text-xs font-semibold text-brand-purple transition hover:opacity-90">
+            <Smartphone className="size-3.5" /> Modo vertical
+          </Link>
+          {drawnCount > 0 && (
+            <form action={resetCompetitionDraw}>
+              <input type="hidden" name="competitionId" value={comp.id} />
+              <ConfirmButton message="ATENÇÃO: isto apaga TODOS os sorteios e resultados de TODAS as categorias. Tens a certeza?" className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted transition hover:bg-surface-soft">
+                <RotateCcw className="size-3.5" /> Recomeçar
+              </ConfirmButton>
+            </form>
+          )}
+        </div>
       </div>
 
       {/* Título */}
