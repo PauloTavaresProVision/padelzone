@@ -15,7 +15,7 @@ const fmtDay = (key: string) =>
 type Sets = { a: number; b: number }[];
 
 // Quantas faixas horárias mostrar de cada vez (janela à volta do "agora").
-const WINDOW = 4;
+const WINDOW = 3;
 
 export default async function ScheduleTvPage({
   params,

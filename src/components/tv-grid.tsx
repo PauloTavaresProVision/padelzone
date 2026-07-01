@@ -54,8 +54,8 @@ function Card({ g }: { g: Cell }) {
   const h = hue(g.cat);
   return (
     <div className={`flex h-full flex-col justify-center overflow-hidden rounded-xl border px-2.5 py-2 ${live ? "border-brand-purple/40 bg-primary-light shadow-[0_0_0_1px_rgba(91,61,245,0.18)]" : "border-line bg-surface pz-shadow-card"}`}>
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="truncate rounded-md px-2 py-0.5 text-[11px] font-bold" style={{ background: `hsl(${h} 78% 94%)`, color: `hsl(${h} 55% 38%)` }}>{g.cat} · {g.section}</span>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="truncate rounded-md px-2 py-0.5 text-xs font-bold" style={{ background: `hsl(${h} 78% 94%)`, color: `hsl(${h} 55% 38%)` }}>{g.cat} · {g.section}</span>
         {live && (
           <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-purple px-2 py-0.5 text-[10px] font-bold uppercase text-white">
             <span className="size-1.5 animate-pulse rounded-full bg-white" /> A jogar
@@ -64,7 +64,7 @@ function Card({ g }: { g: Cell }) {
         {done && <span className="shrink-0 rounded-full bg-success px-2 py-0.5 text-[10px] font-bold uppercase text-white">Terminado</span>}
       </div>
       <Team names={players(g.nameA)} scores={done ? g.sets?.map((s) => s.a) ?? null : null} winner={done && g.winner === "A"} dim={done && g.winner !== "A"} />
-      <div className="my-1.5 h-px bg-zinc-200" />
+      <div className="my-1 h-px bg-zinc-200" />
       <Team names={players(g.nameB)} scores={done ? g.sets?.map((s) => s.b) ?? null : null} winner={done && g.winner === "B"} dim={done && g.winner !== "B"} />
     </div>
   );
