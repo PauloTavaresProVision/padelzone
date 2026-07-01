@@ -224,20 +224,55 @@ export default function AjudaPage() {
 
       <Section id="calendario" icon={CalendarDays} title="Calendário e campos">
         <p>
-          Depois do sorteio, os jogos entram no calendário. Podes agendá-los à mão, escolhendo campo e hora, ou deixar o
-          agendamento automático distribuir tudo pelos campos disponíveis.
+          Depois do sorteio, os jogos entram no calendário. Podes agendá-los à mão, escolhendo campo e hora em cada jogo, ou
+          carregar no agendamento automático para o sistema distribuir tudo de uma vez.
         </p>
-        <p>O automático tem três coisas em conta:</p>
-        <ul className={ul}>
-          <li>os campos que o clube registou;</li>
-          <li>os períodos em que cada dupla disse não estar disponível;</li>
-          <li>os limites de horário da categoria (por exemplo, uma categoria só a partir de certa hora).</li>
-        </ul>
-        <p>Também dá prioridade às fases mais avançadas, para as finais ficarem nos melhores horários.</p>
+
+        <h3 className={h3}>Antes de agendar</h3>
         <p>
-          O calendário tem uma vista normal e uma vista reduzida, para caber mais no ecrã, e um modo TV para pôr num ecrã
-          grande no clube: mostra os jogos por campo e por hora, destaca os que estão a decorrer e, quando há muitos campos,
-          vai rodando por eles sozinho.
+          O automático precisa de duas coisas: os campos do clube registados (no separador Campos) e o sorteio já feito. Sem
+          campos ou sem jogos, não há nada para distribuir.
+        </p>
+
+        <h3 className={h3}>Definições do calendário</h3>
+        <p>No calendário, antes de correr o automático, defines:</p>
+        <ul className={ul}>
+          <li><b>Duração dos jogos:</b> quanto tempo dura cada jogo. É também o tamanho de cada intervalo (por defeito 75 minutos).</li>
+          <li><b>Horário dos dias de semana</b> e <b>horário do fim de semana:</b> a que horas se pode começar e acabar de jogar. Costumam ser diferentes, porque à semana só se joga ao fim do dia e ao fim de semana o dia todo.</li>
+        </ul>
+
+        <h3 className={h3}>Como o automático decide</h3>
+        <p>
+          O sistema cria intervalos do tamanho da duração dos jogos, dia após dia a partir da data de início e dentro do
+          horário de cada dia. Depois vai colocando os jogos, respeitando sempre três regras:
+        </p>
+        <ul className={ul}>
+          <li>nunca dois jogos no mesmo campo à mesma hora;</li>
+          <li>nunca a mesma dupla em dois jogos ao mesmo tempo;</li>
+          <li>no máximo um jogo por dupla por dia, para espalhar os jogos pelos dias e ninguém jogar tudo de seguida.</li>
+        </ul>
+        <p>Os jogos que já tinham hora marcada ficam onde estão. O automático só mexe nos que ainda não têm hora.</p>
+
+        <h3 className={h3}>Prioridades, disponibilidade e limites</h3>
+        <p>Além disso, tem em conta:</p>
+        <ul className={ul}>
+          <li><b>Limites de horário:</b> uma categoria pode ter uma hora máxima para começar os jogos (por exemplo, começar só até às 20h). Existe ainda um limite por defeito para as categorias femininas, que se define no calendário e vale para as femininas que não tenham limite próprio.</li>
+          <li><b>Prioridade a quem tem limite:</b> as categorias com hora limite são agendadas primeiro, e as de limite mais cedo à frente, para apanharem os horários mais cedo. As sem limite ficam para o fim.</li>
+          <li><b>Disponibilidade das duplas:</b> na inscrição, cada dupla pode indicar em que períodos não joga (manhã até às 12h, tarde das 12h às 18h, noite a partir das 18h). O automático evita esses períodos.</li>
+        </ul>
+
+        <h3 className={h3}>Quando não dá para respeitar tudo</h3>
+        <p>
+          Se um jogo não couber dentro das restrições (por exemplo, poucos campos para muitas duplas com a mesma
+          indisponibilidade), o sistema agenda-o à mesma, mas marca-o como "fora das restrições" e diz-te no fim quantos
+          ficaram assim, para os ajustares à mão se quiseres.
+        </p>
+
+        <h3 className={h3}>Ver o calendário</h3>
+        <p>
+          A vista tem um modo normal e um reduzido, que encurta os nomes para caber mais no ecrã. Há ainda o modo TV, para pôr
+          num ecrã grande no clube: mostra os jogos por campo e por hora, destaca os que estão a decorrer e, quando há muitos
+          campos, vai rodando por eles sozinho.
         </p>
       </Section>
 
