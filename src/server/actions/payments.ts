@@ -30,15 +30,19 @@ export async function savePaymentConfig(formData: FormData) {
   const posRaw = String(formData.get("posId") ?? "").trim();
   const referenceEnabled = formData.get("referenceEnabled") === "on";
   const expressEnabled = formData.get("expressEnabled") === "on";
+  const transferEnabled = formData.get("transferEnabled") === "on";
   await prisma.club.update({
     where: { id: club.id },
     data: {
       referenceEnabled,
       expressEnabled,
-      paymentsEnabled: referenceEnabled || expressEnabled,
+      transferEnabled,
+      paymentsEnabled: referenceEnabled || expressEnabled || transferEnabled,
       proxypaySandbox: formData.get("proxypaySandbox") === "on",
       proxypayEntityId: String(formData.get("entityId") ?? "").trim() || null,
       mcxPosId: posRaw ? Number(posRaw) : null,
+      iban: String(formData.get("iban") ?? "").trim() || null,
+      ibanName: String(formData.get("ibanName") ?? "").trim() || null,
       ...(apiKey ? { proxypayApiKey: apiKey } : {}),
       ...(expressToken ? { mcxExpressToken: expressToken } : {}),
     },

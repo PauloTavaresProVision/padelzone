@@ -140,6 +140,9 @@ export type MyPayment = {
   full: boolean;
   referenceEnabled: boolean;
   expressEnabled: boolean;
+  transferEnabled: boolean;
+  iban: string | null;
+  ibanName: string | null;
 };
 
 // Pagamentos das inscrições do jogador (pagos e pendentes), com indicação se a categoria já está cheia.
@@ -151,7 +154,7 @@ export async function getMyPayments(userId: number): Promise<MyPayment[]> {
     orderBy: { createdAt: "desc" },
     include: {
       competition: { select: { name: true } },
-      club: { select: { proxypayEntityId: true, referenceEnabled: true, expressEnabled: true } },
+      club: { select: { proxypayEntityId: true, referenceEnabled: true, expressEnabled: true, transferEnabled: true, iban: true, ibanName: true } },
       entry: { include: { category: { select: { id: true, name: true, maxEntries: true } } } },
     },
   });
@@ -177,6 +180,9 @@ export async function getMyPayments(userId: number): Promise<MyPayment[]> {
       full: p.status !== "PAID" && max != null && conf >= max,
       referenceEnabled: p.club.referenceEnabled,
       expressEnabled: p.club.expressEnabled,
+      transferEnabled: p.club.transferEnabled,
+      iban: p.club.iban,
+      ibanName: p.club.ibanName,
     };
   });
 }

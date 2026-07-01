@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { CreditCard, Smartphone, X, Loader2, AlertTriangle, CheckCircle2, ExternalLink, RefreshCw } from "lucide-react";
-import { playerPayReference, playerPayExpress, checkExpressCharge, simulateExpressPayment, type ExpressCharge } from "@/server/actions/player-payments";
+import { CreditCard, Smartphone, X, Loader2, AlertTriangle, CheckCircle2, ExternalLink, RefreshCw, Landmark } from "lucide-react";
+import { playerPayReference, playerPayExpress, playerPayTransfer, checkExpressCharge, simulateExpressPayment, type ExpressCharge } from "@/server/actions/player-payments";
 import { formatKz } from "@/lib/money";
 
 // Mostra o logótipo do método (coloca os ficheiros em public/); cai para um ícone se ainda não existir.
@@ -21,17 +21,18 @@ function MethodLogo({ src, fallback }: { src: string; fallback: ReactNode }) {
   );
 }
 
-export function PaymentChoice({ entryId, full, autoOpen = false, reference = true, express = true }: { entryId: number; full: boolean; autoOpen?: boolean; reference?: boolean; express?: boolean }) {
+export function PaymentChoice({ entryId, full, autoOpen = false, reference = true, express = true, transfer = false, iban = null, ibanName = null, amount = 0 }: { entryId: number; full: boolean; autoOpen?: boolean; reference?: boolean; express?: boolean; transfer?: boolean; iban?: string | null; ibanName?: string | null; amount?: number }) {
   const router = useRouter();
   const [open, setOpen] = useState(autoOpen);
-  const [mode, setMode] = useState<"choose" | "qr">("choose");
+  const [mode, setMode] = useState<"choose" | "qr" | "transfer">("choose");
+  const [proofFile, setProofFile] = useState<File | null>(null);
   const [charge, setCharge] = useState<ExpressCharge | null>(null);
   const [result, setResult] = useState<"waiting" | "paid" | "failed">("waiting");
   const [err, setErr] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [checking, setChecking] = useState(false);
 
-  const close = () => { setOpen(false); setMode("choose"); setCharge(null); setResult("waiting"); setErr(null); };
+  const close = () => { setOpen(false); setMode("choose"); setCharge(null); setResult("waiting"); setErr(null); setProofFile(null); };
 
   const payRef = () => {
     setErr(null);
@@ -46,6 +47,20 @@ export function PaymentChoice({ entryId, full, autoOpen = false, reference = tru
       try {
         const c = await playerPayExpress(entryId);
         setCharge(c); setMode("qr"); setResult("waiting");
+      } catch (e) { setErr(e instanceof Error ? e.message : "Falhou."); }
+    });
+  };
+
+  const payTransfer = () => {
+    setErr(null);
+    if (!proofFile) { setErr("Anexa o comprovativo."); return; }
+    start(async () => {
+      try {
+        const fd = new FormData();
+        fd.set("entryId", String(entryId));
+        fd.set("proof", proofFile);
+        await playerPayTransfer(fd);
+        close(); router.refresh();
       } catch (e) { setErr(e instanceof Error ? e.message : "Falhou."); }
     });
   };
@@ -86,7 +101,7 @@ export function PaymentChoice({ entryId, full, autoOpen = false, reference = tru
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={close}>
           <div className="pz-shadow-card w-full max-w-sm rounded-2xl border border-line bg-surface p-5" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-bold text-zinc-900">{mode === "qr" ? "Multicaixa Express" : "Pagar inscrição"}</h3>
+              <h3 className="text-base font-bold text-zinc-900">{mode === "qr" ? "Multicaixa Express" : mode === "transfer" ? "Transferência bancária" : "Pagar inscrição"}</h3>
               <button onClick={close} aria-label="Fechar" className="grid size-8 place-items-center rounded-lg text-muted transition hover:bg-surface-soft"><X className="size-5" /></button>
             </div>
 
@@ -136,6 +151,26 @@ export function PaymentChoice({ entryId, full, autoOpen = false, reference = tru
                   </>
                 )}
               </div>
+            ) : mode === "transfer" ? (
+              <div className="space-y-3">
+                <div className="rounded-xl border border-line bg-surface-soft/60 p-3">
+                  <p className="text-xs text-soft">Faz a transferência para:</p>
+                  <div className="mt-1.5 space-y-1 text-sm text-zinc-800">
+                    {ibanName && <p><span className="text-soft">Titular:</span> <strong>{ibanName}</strong></p>}
+                    <p className="break-all"><span className="text-soft">IBAN:</span> <strong className="font-mono">{iban}</strong></p>
+                    <p><span className="text-soft">Montante:</span> <strong className="tabular-nums">{formatKz(amount)}</strong></p>
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-muted">Comprovativo da transferência</label>
+                  <input type="file" accept="image/*,application/pdf" onChange={(e) => setProofFile(e.target.files?.[0] ?? null)} className="block w-full text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-primary-light file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-purple" />
+                  <p className="mt-1 text-xs text-soft">Depois de enviares, o clube valida e a inscrição fica confirmada.</p>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button onClick={() => setMode("choose")} className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-muted transition hover:bg-surface-soft">Voltar</button>
+                  <button onClick={payTransfer} disabled={pending || !proofFile} className="pz-gradient flex-1 rounded-lg px-4 py-2 text-sm font-semibold text-white transition hover:opacity-95 disabled:opacity-60">{pending ? "A enviar…" : "Enviar comprovativo"}</button>
+                </div>
+              </div>
             ) : (
               <div className="space-y-2">
                 {reference && (
@@ -150,7 +185,13 @@ export function PaymentChoice({ entryId, full, autoOpen = false, reference = tru
                     <span><p className="font-semibold text-zinc-900">Multicaixa Express</p><p className="text-xs text-muted">Lê um QR-Code e aprova na app.</p></span>
                   </button>
                 )}
-                {!reference && !express && (
+                {transfer && iban && (
+                  <button onClick={() => setMode("transfer")} disabled={pending} className="flex w-full items-center gap-3 rounded-xl border border-line p-3 text-left transition hover:bg-surface-soft disabled:opacity-60">
+                    <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-line bg-surface-soft"><Landmark className="size-6 text-brand-purple" /></span>
+                    <span><p className="font-semibold text-zinc-900">Transferência bancária</p><p className="text-xs text-muted">Transfere e anexa o comprovativo.</p></span>
+                  </button>
+                )}
+                {!reference && !express && !(transfer && iban) && (
                   <p className="rounded-lg bg-surface-soft px-3 py-2 text-sm text-muted">O pagamento desta inscrição é tratado diretamente com o clube.</p>
                 )}
                 {pending && <p className="flex items-center gap-2 pt-1 text-sm text-muted"><Loader2 className="size-4 animate-spin" /> A processar…</p>}

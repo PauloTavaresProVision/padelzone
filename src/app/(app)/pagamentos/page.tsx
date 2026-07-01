@@ -68,7 +68,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
                       <>
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className="text-xs text-muted">{p.status === "FAILED" ? "O pagamento falhou. Podes tentar de novo." : "Escolhe como pagar."}</span>
-                          <PaymentChoice entryId={p.entryId} full={p.full} autoOpen={p.entryId === payEntryId} reference={p.referenceEnabled} express={p.expressEnabled} />
+                          <PaymentChoice entryId={p.entryId} full={p.full} autoOpen={p.entryId === payEntryId} reference={p.referenceEnabled} express={p.expressEnabled} transfer={p.transferEnabled} iban={p.iban} ibanName={p.ibanName} amount={p.amount} />
                         </div>
                         {p.method === "REFERENCE" && p.reference && (
                           <div className="mt-3 rounded-xl border border-line bg-surface-soft/60 p-3">

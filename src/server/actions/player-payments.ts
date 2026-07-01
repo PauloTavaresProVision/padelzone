@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUserId } from "@/lib/auth";
 import { createReference, createCharge, getCharge, getExpressTransaction, mockChargeTransaction } from "@/server/proxypay";
 import { confirmPaymentPaid } from "@/server/payments-core";
+import { saveFile } from "@/server/upload";
 
 async function loadOwnedEntry(entryId: number, userId: number) {
   const player = await prisma.player.findUnique({ where: { userId } });
@@ -42,7 +43,7 @@ function demoReference() {
   return s;
 }
 
-async function upsertPayment(entry: Awaited<ReturnType<typeof loadOwnedEntry>>, price: number, data: { method: "REFERENCE" | "MULTICAIXA_EXPRESS"; status: "PENDING" | "PAID" | "FAILED"; reference?: string | null; externalId?: string | null }) {
+async function upsertPayment(entry: Awaited<ReturnType<typeof loadOwnedEntry>>, price: number, data: { method: "REFERENCE" | "MULTICAIXA_EXPRESS" | "BANK_TRANSFER"; status: "PENDING" | "PAID" | "FAILED"; reference?: string | null; externalId?: string | null; proofUrl?: string | null }) {
   const existing = entry.payments[0];
   if (existing) return prisma.payment.update({ where: { id: existing.id }, data });
   return prisma.payment.create({
@@ -66,6 +67,25 @@ export async function playerPayReference(entryId: number) {
     reference = demoReference(); // modo de demonstração
   }
   await upsertPayment(entry, price, { method: "REFERENCE", status: "PENDING", reference, externalId: reference });
+  revalidatePath("/pagamentos");
+  revalidatePath("/inscricoes");
+}
+
+// Pagar por Transferência bancária: anexa o comprovativo; fica pendente até o clube validar.
+export async function playerPayTransfer(formData: FormData) {
+  const userId = await getSessionUserId();
+  if (!userId) throw new Error("Sessão expirada.");
+  const entryId = Number(formData.get("entryId"));
+  const entry = await loadOwnedEntry(entryId, userId);
+  await assertNotFull(entry);
+  const price = priceOf(entry);
+  const club = entry.category.competition.club;
+  if (!club.transferEnabled) throw new Error("A transferência bancária não está ativa para este clube.");
+
+  const saved = await saveFile(formData.get("proof"), "recibos");
+  if (!saved) throw new Error("Anexa o comprovativo da transferência.");
+
+  await upsertPayment(entry, price, { method: "BANK_TRANSFER", status: "PENDING", proofUrl: saved.url, reference: null, externalId: null });
   revalidatePath("/pagamentos");
   revalidatePath("/inscricoes");
 }

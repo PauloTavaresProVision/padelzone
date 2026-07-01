@@ -121,6 +121,10 @@ export default async function PagamentosPage() {
                 Multicaixa Express
               </label>
               <label className="inline-flex items-center gap-2 text-sm font-medium text-zinc-800">
+                <input type="checkbox" name="transferEnabled" defaultChecked={club.transferEnabled} className="size-4 rounded border-line text-brand-purple focus:ring-brand-purple" />
+                Transferência bancária
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm font-medium text-zinc-800">
                 <input type="checkbox" name="proxypaySandbox" defaultChecked={club.proxypaySandbox} className="size-4 rounded border-line text-brand-purple focus:ring-brand-purple" />
                 Modo de testes (sandbox)
               </label>
@@ -150,6 +154,20 @@ export default async function PagamentosPage() {
                 <input type="password" name="expressToken" autoComplete="off" placeholder={club.mcxExpressToken ? "•••••••• (guardado, deixa em branco para manter)" : "token OPG (Bearer)"} className={field} />
               </div>
             </div>
+          </div>
+          <div className="border-t border-line pt-4">
+            <p className="mb-3 text-sm font-semibold text-zinc-900">Transferência bancária</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className={label}>IBAN</label>
+                <input name="iban" defaultValue={club.iban ?? ""} placeholder="AO06 0000 0000 0000 0000 0000 0" className={field} />
+              </div>
+              <div>
+                <label className={label}>Titular da conta</label>
+                <input name="ibanName" defaultValue={club.ibanName ?? ""} placeholder="Nome do titular" className={field} />
+              </div>
+            </div>
+            <p className="mt-1.5 text-xs text-soft">O jogador vê estes dados, transfere e anexa o comprovativo. Validas o pagamento na lista abaixo (botão “Pago”).</p>
           </div>
           <div>
             <label className={label}>URL do webhook (configura no painel ProxyPay)</label>
@@ -206,7 +224,9 @@ export default async function PagamentosPage() {
                       <td className="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums text-zinc-900">{formatKz(Number(p.amount))}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-muted">{METHOD[p.method] ?? p.method}</td>
                       <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-muted">
-                        {p.reference ? `${club.proxypayEntityId ?? "—"} · ${p.reference}` : "—"}
+                        {p.method === "BANK_TRANSFER" && p.proofUrl ? (
+                          <a href={p.proofUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-sans text-brand-purple hover:underline"><FileText className="size-3.5" /> Ver recibo</a>
+                        ) : p.reference ? `${club.proxypayEntityId ?? "—"} · ${p.reference}` : "—"}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${st.cls}`}>{st.label}</span>
