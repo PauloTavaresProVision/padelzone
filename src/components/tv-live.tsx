@@ -9,7 +9,9 @@ function hue(s: string) {
 }
 
 // Painel "transmissão": jogos a decorrer em destaque + próximos jogos em lista.
-export function TvLive({ live, upcoming }: { live: LiveItem[]; upcoming: NextItem[] }) {
+// cols = nº de colunas dos cartões ao vivo (3 na horizontal, 1 na vertical).
+export function TvLive({ live, upcoming, cols = 3 }: { live: LiveItem[]; upcoming: NextItem[]; cols?: number }) {
+  const liveCols = cols === 1 ? "grid-cols-1" : cols === 2 ? "grid-cols-2" : "grid-cols-3";
   return (
     <div className="flex h-full flex-col gap-5">
       {/* Ao vivo */}
@@ -20,7 +22,7 @@ export function TvLive({ live, upcoming }: { live: LiveItem[]; upcoming: NextIte
             Sem jogos a decorrer neste momento.
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-4">
+          <div className={`grid ${liveCols} gap-4`}>
             {live.map((g) => {
               const h = hue(g.cat);
               return (
