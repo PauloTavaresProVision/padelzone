@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Trophy, Tags, Users, LayoutGrid, CreditCard, MessageSquare, Settings, LogOut, MapPin } from "lucide-react";
+import { LayoutDashboard, Trophy, Tags, Users, LayoutGrid, CreditCard, MessageSquare, Settings, LogOut, MapPin, HelpCircle } from "lucide-react";
 import { logout } from "@/server/actions/auth";
 
 const items = [
@@ -14,6 +14,7 @@ const items = [
   { href: "/admin/pagamentos", label: "Pagamentos", icon: CreditCard },
   { href: "/admin/mensagens", label: "Mensagens", icon: MessageSquare },
   { href: "/admin/definicoes", label: "Definições", icon: Settings },
+  { href: "/admin/ajuda", label: "Ajuda", icon: HelpCircle },
 ];
 
 export function AdminSidebar({ clubName, clubCity, userName }: { clubName: string; clubCity: string; userName: string }) {
