@@ -83,10 +83,14 @@ export function PaymentChoice({ entryId, full, autoOpen = false, reference = tru
     } finally { setChecking(false); }
   };
 
-  // Polling automático enquanto o QR está no ecrã.
+  // Polling automático enquanto o QR está no ecrã (com limite, para não sondar para sempre).
   useEffect(() => {
     if (mode !== "qr" || result !== "waiting") return;
-    const iv = setInterval(() => { void verify(); }, 4000);
+    let tries = 0;
+    const iv = setInterval(() => {
+      if (tries++ >= 150) { clearInterval(iv); return; } // ~10 min; o botão "Já paguei, verificar" continua a funcionar
+      void verify();
+    }, 4000);
     return () => clearInterval(iv);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, result, entryId]);

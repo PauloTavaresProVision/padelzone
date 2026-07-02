@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { Plus, Check } from "lucide-react";
 import { createCompetition } from "@/server/actions/competitions";
 import { ApplRankingFields } from "@/components/appl-ranking-fields";
@@ -21,12 +21,51 @@ export function CreateCompetitionForm({ clubId, templates }: { clubId: number; t
   const [state, action, pending] = useActionState(createCompetition, null);
   const [step, setStep] = useState(0);
   const [format, setFormat] = useState("GROUPS_KNOCKOUT");
+  const formRef = useRef<HTMLFormElement>(null);
+  const [stepError, setStepError] = useState<string | null>(null);
 
   const groups = GENDER_ORDER.map((gender) => ({ gender, items: templates.filter((t) => t.gender === gender) })).filter((g) => g.items.length > 0);
   const show = (i: number) => (step === i ? "" : "hidden");
 
+  // Validação no cliente antes de avançar/criar (o servidor valida à mesma).
+  function stepProblem(i: number): string | null {
+    const f = formRef.current;
+    if (!f) return null;
+    const fd = new FormData(f);
+    if (i === 0) {
+      if (!String(fd.get("name") ?? "").trim()) return "Indica o nome do torneio.";
+      const start = String(fd.get("startDate") ?? ""), end = String(fd.get("endDate") ?? "");
+      if (start && end && end < start) return "A data de fim não pode ser anterior ao início.";
+      const ro = String(fd.get("regOpenAt") ?? ""), rc = String(fd.get("regCloseAt") ?? "");
+      if (ro && rc && rc < ro) return "O fecho das inscrições não pode ser anterior à abertura.";
+    }
+    return null;
+  }
+  function goNext() {
+    const problem = stepProblem(step);
+    if (problem) return setStepError(problem);
+    setStepError(null);
+    setStep((s) => Math.min(STEPS.length - 1, s + 1));
+  }
+  function goBack() {
+    setStepError(null);
+    setStep((s) => Math.max(0, s - 1));
+  }
+
   return (
-    <form action={action} className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+    <form
+      ref={formRef}
+      action={action}
+      onSubmit={(e) => {
+        const problem = stepProblem(0);
+        if (problem) {
+          e.preventDefault();
+          setStepError(problem);
+          setStep(0);
+        }
+      }}
+      className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"
+    >
       <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-zinc-900 dark:text-zinc-50">
         <Plus className="size-5 text-brand-purple" /> Novo torneio
       </h2>
@@ -116,12 +155,12 @@ export function CreateCompetitionForm({ clubId, templates }: { clubId: number; t
         </div>
       </div>
 
-      {state?.error && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40">{state.error}</p>}
+      {(stepError || state?.error) && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40">{stepError ?? state?.error}</p>}
 
       <div className="mt-5 flex items-center justify-between gap-2">
-        <button type="button" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className={btnGhost}>Voltar</button>
+        <button type="button" onClick={goBack} disabled={step === 0} className={btnGhost}>Voltar</button>
         {step < STEPS.length - 1 ? (
-          <button key="next" type="button" onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))} className={btnPrimary}>Seguinte</button>
+          <button key="next" type="button" onClick={goNext} className={btnPrimary}>Seguinte</button>
         ) : (
           <button key="create" type="submit" disabled={pending} className={btnPrimary}>{pending ? "A criar…" : "Criar torneio"}</button>
         )}
