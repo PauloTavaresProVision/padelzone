@@ -185,6 +185,10 @@ export async function updateMemberRole(formData: FormData) {
   await requireManager(clubId, userId);
   const memberId = Number(formData.get("memberId"));
   const role = String(formData.get("role") ?? "STAFF") as ManageableRole;
+  // Confirma que o membro pertence a ESTE clube (memberId é a PK de ClubUser, independente do
+  // clube) — senão um gestor podia alterar o papel de um membro de outro clube.
+  const member = await prisma.clubUser.findUnique({ where: { id: memberId } });
+  if (!member || member.clubId !== clubId) throw new Error("Membro não encontrado neste clube.");
   await prisma.clubUser.update({ where: { id: memberId }, data: { role } });
   revalidatePath("/admin", "layout");
 }
@@ -196,8 +200,10 @@ export async function removeMember(formData: FormData) {
   await requireManager(clubId, userId);
   const memberId = Number(formData.get("memberId"));
   const member = await prisma.clubUser.findUnique({ where: { id: memberId } });
+  // Confirma que o membro é deste clube (senão um gestor podia remover membros de outro clube).
+  if (!member || member.clubId !== clubId) throw new Error("Membro não encontrado neste clube.");
   // Não permitir remover o dono do clube
-  if (member && member.role !== "CLUB_OWNER") {
+  if (member.role !== "CLUB_OWNER") {
     await prisma.clubUser.delete({ where: { id: memberId } });
   }
   revalidatePath("/admin", "layout");

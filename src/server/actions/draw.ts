@@ -68,7 +68,9 @@ export async function swapQualifier(formData: FormData) {
   const outEntryId = Number(formData.get("outEntryId"));
 
   const entries = await prisma.entry.findMany({
-    where: { id: { in: [inEntryId, outEntryId] } },
+    // Restringe à categoria autorizada — senão dava para injetar uma inscrição de outra
+    // categoria/clube no quadro através dos ids do formulário.
+    where: { id: { in: [inEntryId, outEntryId] }, categoryId },
     select: { id: true, teamId: true, playerId: true },
   });
   const inE = entries.find((e) => e.id === inEntryId);

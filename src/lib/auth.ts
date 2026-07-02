@@ -4,6 +4,12 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 
 const COOKIE = "pz_session";
+// Em produção o segredo TEM de vir do ambiente e ser forte — senão qualquer pessoa que conheça
+// o valor por omissão podia forjar cookies de sessão (e tokens de reposição/convite). Falha já
+// no arranque em vez de correr com uma chave insegura conhecida.
+if (process.env.NODE_ENV === "production" && (!process.env.AUTH_SECRET || process.env.AUTH_SECRET.length < 16)) {
+  throw new Error("AUTH_SECRET em falta ou demasiado fraca em produção (define uma chave com pelo menos 16 caracteres).");
+}
 const SECRET = process.env.AUTH_SECRET || "dev-insecure-secret-change-me";
 
 function hmac(value: string) {

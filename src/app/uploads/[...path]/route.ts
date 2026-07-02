@@ -12,9 +12,10 @@ const TYPES: Record<string, string> = {
   jpeg: "image/jpeg",
   gif: "image/gif",
   webp: "image/webp",
-  svg: "image/svg+xml",
   avif: "image/avif",
   pdf: "application/pdf",
+  // SVG deliberadamente omitido: seria servido inline e pode conter <script> (XSS). Cai para
+  // application/octet-stream (descarrega em vez de executar).
 };
 
 export async function GET(_req: Request, { params }: { params: Promise<{ path: string[] }> }) {
@@ -23,6 +24,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ path: s
   if (!parts?.length || parts.some((p) => p.includes("..") || p.includes("/") || p.includes("\\"))) {
     return new Response("Not found", { status: 404 });
   }
+  // Recibos de pagamento são privados: só através da rota autenticada /api/recibos/<id>.
+  if (parts[0] === "recibos") return new Response("Not found", { status: 404 });
   const file = path.join(process.cwd(), "public", "uploads", ...parts);
   try {
     const data = await readFile(file);
