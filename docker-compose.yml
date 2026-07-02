@@ -29,6 +29,9 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: "postgresql://padelzone:padelzone@db:5432/padelzone?schema=public"
+      # Injeta o segredo lido do .env (o valor fica no .env, nao no git). Garante que chega ao
+      # container mesmo que o env_file nao esteja a ser aplicado.
+      AUTH_SECRET: ${AUTH_SECRET}
     ports:
       # Aceder em http://localhost:7756 (container escuta na 3000).
       - "7756:3000"
