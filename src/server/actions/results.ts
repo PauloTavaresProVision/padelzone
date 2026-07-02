@@ -8,7 +8,7 @@ import { notifyPlayers } from "@/lib/notify";
 
 const MANAGER_ROLES = ["CLUB_OWNER", "DIRECTOR", "STAFF"];
 
-export type ResultState = { ok?: boolean; error?: string } | null;
+export type ResultState = { ok?: boolean; error?: string; warning?: string } | null;
 
 export async function submitResult(_prev: ResultState, formData: FormData): Promise<ResultState> {
   const userId = await getSessionUserId();
@@ -36,8 +36,10 @@ export async function submitResult(_prev: ResultState, formData: FormData): Prom
     }
   }
 
+  let clearedDownstream = 0;
   try {
-    await submitMatchResult(matchId, sets);
+    const r = await submitMatchResult(matchId, sets);
+    clearedDownstream = r.clearedDownstream;
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Não foi possível guardar o resultado." };
   }
@@ -71,7 +73,9 @@ export async function submitResult(_prev: ResultState, formData: FormData): Prom
   }
 
   revalidatePath("/admin", "layout");
-  return { ok: true };
+  return clearedDownstream > 0
+    ? { ok: true, warning: `O vencedor mudou: ${clearedDownstream} jogo(s) das rondas seguintes foram repostos por jogar. Volta a lançar esses resultados.` }
+    : { ok: true };
 }
 
 // Marca um jogo como "a jogar" (LIVE) ou reverte para não iniciado. Reflete-se no modo TV.

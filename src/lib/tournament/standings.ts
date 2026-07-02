@@ -1,6 +1,6 @@
 // Classificação (tabela de grupo / liga) a partir dos resultados.
-// Ordena por: confrontos ganhos vs jogados (vitórias ÷ jogos) -> diferença de
-// jogos (Pg - Ps) -> diferença de sets. (Mesmo critério do PadelTeams.)
+// Ordena por confrontos ganhos vs jogados (vitórias ÷ jogos) e, entre equipas empatadas,
+// desempata por: confronto direto -> diferença de sets -> diferença de jogos -> sorteio.
 
 export interface MatchOutcome {
   homeId: number;
@@ -82,9 +82,35 @@ export function computeStandings(
   // Confrontos ganhos vs jogados (vitórias ÷ jogos jogados).
   const winRatio = (r: StandingRow) => (r.played > 0 ? r.won / r.played : 0);
 
-  const rows = [...table.values()].sort(
-    (x, y) => winRatio(y) - winRatio(x) || gameDiff(y) - gameDiff(x) || setDiff(y) - setDiff(x)
-  );
-  rows.forEach((row, i) => (row.rank = i + 1));
-  return rows;
+  // Confronto direto: vitórias de uma equipa sobre as OUTRAS equipas empatadas com ela.
+  const beat = new Map<number, Map<number, number>>();
+  for (const r of results) {
+    const win = r.homeSets > r.awaySets ? r.homeId : r.awayId;
+    const lose = r.homeSets > r.awaySets ? r.awayId : r.homeId;
+    const mm = beat.get(win) ?? new Map<number, number>();
+    mm.set(lose, (mm.get(lose) ?? 0) + 1);
+    beat.set(win, mm);
+  }
+  const headToHead = (id: number, group: number[]) =>
+    group.reduce((acc, other) => acc + (other === id ? 0 : beat.get(id)?.get(other) ?? 0), 0);
+
+  // Ordena por confrontos ganhos e, dentro de cada empate, aplica o desempate do regulamento:
+  // confronto direto -> diferença de sets -> diferença de jogos (e por fim sorteio, deixado estável).
+  const rows = [...table.values()].sort((x, y) => winRatio(y) - winRatio(x));
+  const out: StandingRow[] = [];
+  for (let i = 0; i < rows.length; ) {
+    let j = i;
+    while (j < rows.length && winRatio(rows[j]) === winRatio(rows[i])) j++;
+    const group = rows.slice(i, j);
+    if (group.length > 1) {
+      const ids = group.map((g) => g.id);
+      group.sort(
+        (a, b) => headToHead(b.id, ids) - headToHead(a.id, ids) || setDiff(b) - setDiff(a) || gameDiff(b) - gameDiff(a),
+      );
+    }
+    out.push(...group);
+    i = j;
+  }
+  out.forEach((row, i) => (row.rank = i + 1));
+  return out;
 }

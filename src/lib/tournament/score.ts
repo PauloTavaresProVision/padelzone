@@ -5,17 +5,18 @@
 
 export type SetScore = { a: number; b: number };
 
-// Um set com 8 ou mais "jogos" de um dos lados é, na prática, um super tie-break
-// (um set normal de padel vai no máximo a 7, com tie-break a fechar 7-6).
-const isSuperTieBreak = (s: SetScore) => Math.max(s.a, s.b) >= 8;
+// O super tie-break só existe como SET DECISIVO: é o último set de um jogo que foi a três sets
+// (1-1) e tem a magnitude de um match tie-break (>= 8, ex.: 10-8). Assim, um 1.º/2.º set conta
+// sempre os jogos como estão — não é confundido com um super tie-break por ter um valor alto.
+const isSuperTieBreak = (s: SetScore, i: number, total: number) => i === total - 1 && total >= 3 && Math.max(s.a, s.b) >= 8;
 
 export function tallyGames(sets: SetScore[]) {
   let setsA = 0,
     setsB = 0,
     gamesA = 0,
     gamesB = 0;
-  for (const s of sets) {
-    if (isSuperTieBreak(s)) {
+  sets.forEach((s, i) => {
+    if (isSuperTieBreak(s, i, sets.length)) {
       gamesA += s.a > s.b ? 1 : 0;
       gamesB += s.b > s.a ? 1 : 0;
     } else {
@@ -24,6 +25,6 @@ export function tallyGames(sets: SetScore[]) {
     }
     if (s.a > s.b) setsA++;
     else if (s.b > s.a) setsB++;
-  }
+  });
   return { setsA, setsB, gamesA, gamesB };
 }

@@ -16,7 +16,9 @@ export function getCategoryStage(categoryId: number) {
         include: { group: true, result: true, sides: { include: { team: teamInc, players: { include: { player: true } } } } },
       },
       standings: {
-        orderBy: [{ groupId: "asc" }, { points: "desc" }, { rank: "asc" }],
+        // Ordena pelo rank (que já codifica o desempate completo: confronto direto, sets, jogos).
+        // Ordenar por pontos podia contradizer o rank quando as equipas jogaram nº de jogos diferente.
+        orderBy: [{ groupId: "asc" }, { rank: "asc" }],
         include: { entry: { include: { team: teamInc, player: true } } },
       },
     },
@@ -38,7 +40,9 @@ export function getCategoryStages(categoryId: number) {
         include: { group: true, result: true, sides: { include: { team: teamInc, players: { include: { player: true } } } } },
       },
       standings: {
-        orderBy: [{ groupId: "asc" }, { points: "desc" }, { rank: "asc" }],
+        // Ordena pelo rank (que já codifica o desempate completo: confronto direto, sets, jogos).
+        // Ordenar por pontos podia contradizer o rank quando as equipas jogaram nº de jogos diferente.
+        orderBy: [{ groupId: "asc" }, { rank: "asc" }],
         include: { entry: { include: { team: teamInc, player: true } } },
       },
     },

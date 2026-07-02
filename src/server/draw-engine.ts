@@ -88,7 +88,39 @@ async function buildKnockoutStage(categoryId: number, order: number, name: strin
       });
     }
   }
+  await resolveByes(stage.id);
   return stage.id;
+}
+
+// Resolve os "isentos" (byes) de um quadro: um jogo da 1ª ronda com um só lado real (o outro é
+// isento) é ganho por WALKOVER e o lado real sobe já para o jogo seguinte. Sem isto o quadro ficava
+// preso — o formulário de resultado exige os dois lados reais, por isso o vencedor do isento nunca
+// era submetido e as rondas seguintes ficavam com "Vencedor Jx" para sempre.
+export async function resolveByes(stageId: number) {
+  const matches = await prisma.match.findMany({
+    where: { stageId, round: 0 },
+    include: { sides: { include: { players: true } } },
+  });
+  for (const m of matches) {
+    if (m.status === "DONE" || m.status === "WALKOVER") continue;
+    const real = m.sides.filter((s) => s.teamId != null || s.players.length > 0);
+    const hasBye = m.sides.some((s) => s.teamId == null && s.players.length === 0);
+    if (real.length !== 1 || !hasBye) continue; // precisa de exatamente 1 lado real + 1 isento
+    const winSide = real[0];
+
+    await prisma.match.update({ where: { id: m.id }, data: { status: "WALKOVER" } });
+    if (m.nextMatchId == null) continue;
+
+    // Mesmo mapeamento de slot do avanço normal (results-engine): posição par -> A, ímpar -> B.
+    const targetSlot = m.slotInRound % 2 === 0 ? "A" : "B";
+    const nextSide = await prisma.matchSide.findFirst({ where: { matchId: m.nextMatchId, side: targetSlot } });
+    if (!nextSide) continue;
+    await prisma.matchSidePlayer.deleteMany({ where: { matchSideId: nextSide.id } });
+    await prisma.matchSide.update({ where: { id: nextSide.id }, data: { teamId: winSide.teamId ?? null, label: null } });
+    for (const p of winSide.players) {
+      await prisma.matchSidePlayer.create({ data: { matchSideId: nextSide.id, playerId: p.playerId } });
+    }
+  }
 }
 
 export async function persistKnockout(categoryId: number, useSeeds = true) {
@@ -298,12 +330,12 @@ export function findQualifierTies(rows: RankLite[], size: number): { spots: numb
     (a, b) =>
       a.rank - b.rank ||
       ratio(b) - ratio(a) ||
-      (b.gamesFor - b.gamesAgainst) - (a.gamesFor - a.gamesAgainst) ||
-      (b.setsFor - b.setsAgainst) - (a.setsFor - a.setsAgainst),
+      (b.setsFor - b.setsAgainst) - (a.setsFor - a.setsAgainst) ||
+      (b.gamesFor - b.gamesAgainst) - (a.gamesFor - a.gamesAgainst),
   );
   const n = Math.max(2, Math.min(size || sorted.length, sorted.length));
   if (n >= sorted.length) return null;
-  const key = (r: RankLite) => `${r.rank}|${ratio(r).toFixed(4)}|${r.gamesFor - r.gamesAgainst}|${r.setsFor - r.setsAgainst}`;
+  const key = (r: RankLite) => `${r.rank}|${ratio(r).toFixed(4)}|${r.setsFor - r.setsAgainst}|${r.gamesFor - r.gamesAgainst}`;
   if (key(sorted[n - 1]) !== key(sorted[n])) return null;
   const k = key(sorted[n - 1]);
   let start = n - 1;
@@ -332,8 +364,8 @@ export async function persistQualifiersFlexible(categoryId: number, size: number
     (a, b) =>
       a.rank - b.rank ||
       (b.played ? b.won / b.played : 0) - (a.played ? a.won / a.played : 0) ||
-      (b.gamesFor - b.gamesAgainst) - (a.gamesFor - a.gamesAgainst) ||
-      (b.setsFor - b.setsAgainst) - (a.setsFor - a.setsAgainst),
+      (b.setsFor - b.setsAgainst) - (a.setsFor - a.setsAgainst) ||
+      (b.gamesFor - b.gamesAgainst) - (a.gamesFor - a.gamesAgainst),
   );
   const pool: SeededItem[] = ranked.map((st) => ({
     e: { id: st.entry.id, teamId: st.entry.teamId, playerId: st.entry.playerId, seed: null },
@@ -385,5 +417,6 @@ export async function fillQualifiers(categoryId: number, qualifiersPerGroup: num
       }
     }
   }
+  await resolveByes(ko.id); // apurados já colocados: resolve os isentos do quadro
   return ko.id;
 }

@@ -125,20 +125,28 @@ export async function autoSchedule(formData: FormData) {
     where: { stage: { category: { competitionId } } },
     orderBy: [{ stageId: "asc" }, { groupId: "asc" }, { round: "asc" }, { slotInRound: "asc" }],
     include: {
-      sides: { select: { side: true, teamId: true } },
+      sides: { select: { side: true, teamId: true, players: { select: { playerId: true } } } },
       stage: { select: { category: { select: { id: true, gender: true, latestStart: true } } } },
     },
   });
   if (matches.length === 0) throw new Error("Não há jogos para agendar (faz o sorteio primeiro).");
 
-  // Indisponibilidade por dupla (união das inscrições da equipa). Chave: "YYYY-MM-DD:period".
-  const entries = await prisma.entry.findMany({ where: { category: { competitionId }, teamId: { not: null } }, select: { teamId: true, unavailable: true } });
-  const teamOff = new Map<number, Set<string>>();
+  // Cada participante (dupla OU jogador individual) tem uma chave estável: "t<teamId>" para
+  // duplas, "p<playerId>" para inscrições individuais. Assim o agendador trata as categorias
+  // individuais como as de duplas — senão ignorava-as e podia pôr o mesmo jogador em dois campos
+  // ao mesmo tempo, além de ignorar a sua indisponibilidade e o limite de 1 jogo/dia.
+  const keyForSide = (s: { teamId: number | null; players: { playerId: number }[] }): string[] =>
+    s.teamId != null ? [`t${s.teamId}`] : s.players.map((p) => `p${p.playerId}`);
+
+  // Indisponibilidade por participante (união das inscrições). Chave: "YYYY-MM-DD:period".
+  const entries = await prisma.entry.findMany({ where: { category: { competitionId } }, select: { teamId: true, playerId: true, unavailable: true } });
+  const offByKey = new Map<string, Set<string>>();
   for (const e of entries) {
-    if (!e.teamId || !Array.isArray(e.unavailable)) continue;
-    const set = teamOff.get(e.teamId) ?? new Set<string>();
+    const k = e.teamId != null ? `t${e.teamId}` : e.playerId != null ? `p${e.playerId}` : null;
+    if (!k || !Array.isArray(e.unavailable)) continue;
+    const set = offByKey.get(k) ?? new Set<string>();
     for (const u of e.unavailable as unknown[]) if (typeof u === "string") set.add(u);
-    teamOff.set(e.teamId, set);
+    offByKey.set(k, set);
   }
 
   // Limite de início por categoria: o próprio, ou o default das categorias femininas.
@@ -171,8 +179,8 @@ export async function autoSchedule(formData: FormData) {
   }
 
   const usedCourts = new Map<number, Set<number>>();
-  const busyTeams = new Map<number, Set<number>>();
-  const teamDays = new Map<number, Set<string>>(); // dias já ocupados por cada dupla (máx. 1 jogo/dia)
+  const busyKeys = new Map<number, Set<string>>();
+  const dayKeys = new Map<string, Set<string>>(); // dias já ocupados por cada participante (máx. 1 jogo/dia)
 
   // PRESERVAR o que já está agendado (grupos jogados, jogos já marcados): ocupam os seus
   // espaços (para não haver choques) e NÃO se re-agendam. Só agendamos os jogos sem hora.
@@ -181,18 +189,22 @@ export async function autoSchedule(formData: FormData) {
   for (const mt of matches) {
     if (!mt.scheduledAt) continue;
     const day = mt.scheduledAt.toISOString().slice(0, 10);
-    const tA = mt.sides.find((s) => s.side === "A")?.teamId ?? null;
-    const tB = mt.sides.find((s) => s.side === "B")?.teamId ?? null;
-    for (const t of [tA, tB]) if (t) { const s = teamDays.get(t) ?? new Set<string>(); s.add(day); teamDays.set(t, s); }
+    const keys = mt.sides.flatMap(keyForSide);
+    for (const k of keys) { const s = dayKeys.get(k) ?? new Set<string>(); s.add(day); dayKeys.set(k, s); }
     const ti = slotByWhen.get(mt.scheduledAt.getTime());
     if (ti != null) {
       const uc = usedCourts.get(ti) ?? new Set<number>(); if (mt.courtId) uc.add(mt.courtId); usedCourts.set(ti, uc);
-      const bt = busyTeams.get(ti) ?? new Set<number>(); if (tA) bt.add(tA); if (tB) bt.add(tB); busyTeams.set(ti, bt);
+      const bk = busyKeys.get(ti) ?? new Set<string>(); for (const k of keys) bk.add(k); busyKeys.set(ti, bk);
     }
   }
 
-  // Só agendamos os jogos SEM hora. Categorias com limite primeiro (limite mais cedo primeiro).
-  const order = matches.filter((mt) => !mt.scheduledAt).map((mt, i) => ({ mt, i }));
+  // Só agendamos jogos SEM hora e prontos a jogar: exclui os isentos (WALKOVER) e os jogos com
+  // lados por definir ("Vencedor Jx"/"Apurado"), que só entram quando ambos os lados forem reais.
+  // Categorias com limite primeiro (limite mais cedo primeiro).
+  const isRealSide = (s: { teamId: number | null; players: { playerId: number }[] }) => s.teamId != null || s.players.length > 0;
+  const order = matches
+    .filter((mt) => !mt.scheduledAt && (mt.status === "PENDING" || mt.status === "SCHEDULED") && mt.sides.length >= 2 && mt.sides.every(isRealSide))
+    .map((mt, i) => ({ mt, i }));
   order.sort((a, b) => {
     const ca = catCutoff.get(a.mt.stage.category.id) ?? Infinity;
     const cb = catCutoff.get(b.mt.stage.category.id) ?? Infinity;
@@ -203,33 +215,30 @@ export async function autoSchedule(formData: FormData) {
   const violations: number[] = [];
 
   for (const { mt: match } of order) {
-    const tA = match.sides.find((s) => s.side === "A")?.teamId ?? null;
-    const tB = match.sides.find((s) => s.side === "B")?.teamId ?? null;
+    const keys = match.sides.flatMap(keyForSide);
     const cutoff = catCutoff.get(match.stage.category.id) ?? null;
-    const offA = tA ? teamOff.get(tA) : null;
-    const offB = tB ? teamOff.get(tB) : null;
+    const offSets = keys.map((k) => offByKey.get(k)).filter((s): s is Set<string> => !!s);
 
     const place = (respect: boolean): boolean => {
       for (let ti = 0; ti < slots.length; ti++) {
         const uc = usedCourts.get(ti) ?? new Set<number>();
         if (uc.size >= courts.length) continue;
-        const bt = busyTeams.get(ti) ?? new Set<number>();
-        if (tA && bt.has(tA)) continue;
-        if (tB && bt.has(tB)) continue;
+        const bk = busyKeys.get(ti) ?? new Set<string>();
+        if (keys.some((k) => bk.has(k))) continue; // algum participante já ocupado neste slot
         if (respect) {
           if (cutoff != null && slots[ti].min > cutoff) continue;
-          if (offA?.has(slots[ti].key) || offB?.has(slots[ti].key)) continue;
-          // No máximo 1 jogo por dupla por dia (espalha pelos dias, como o PadelTeams).
-          if (tA && teamDays.get(tA)?.has(slots[ti].day)) continue;
-          if (tB && teamDays.get(tB)?.has(slots[ti].day)) continue;
+          if (offSets.some((s) => s.has(slots[ti].key))) continue;
+          // No máximo 1 jogo por participante por dia (espalha pelos dias, como o PadelTeams).
+          if (keys.some((k) => dayKeys.get(k)?.has(slots[ti].day))) continue;
         }
         const court = courts.find((c) => !uc.has(c.id));
         if (!court) continue;
-        const markDay = (t: number) => { const s = teamDays.get(t) ?? new Set<string>(); s.add(slots[ti].day); teamDays.set(t, s); };
         uc.add(court.id); usedCourts.set(ti, uc);
-        if (tA) { bt.add(tA); markDay(tA); }
-        if (tB) { bt.add(tB); markDay(tB); }
-        busyTeams.set(ti, bt);
+        for (const k of keys) {
+          bk.add(k);
+          const s = dayKeys.get(k) ?? new Set<string>(); s.add(slots[ti].day); dayKeys.set(k, s);
+        }
+        busyKeys.set(ti, bk);
         updates.push({ id: match.id, courtId: court.id, when: slots[ti].when });
         return true;
       }

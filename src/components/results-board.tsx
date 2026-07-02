@@ -112,13 +112,16 @@ export function ResultsBoard({ games, categories }: { games: Game[]; categories:
 function GameCard({ g }: { g: Game }) {
   const [state, action, pending] = useActionState<ResultState, FormData>(submitResult, null);
   const ready = g.realA && g.realB;
-  const status = !ready
-    ? { label: "Aguarda apuramento", dot: "bg-soft", cls: "bg-surface-soft text-soft" }
-    : g.done
-      ? { label: "Terminado", dot: "bg-success", cls: "bg-success-bg text-success" }
-      : g.live
-        ? { label: "A jogar", dot: "bg-amber-500 animate-pulse", cls: "bg-amber-50 text-amber-700" }
-        : { label: "Por jogar", dot: "bg-brand-purple", cls: "bg-primary-light text-brand-purple" };
+  const bye = g.done && !ready; // jogo com isento: o lado real passou automaticamente (walkover)
+  const status = bye
+    ? { label: "Isento — passou", dot: "bg-success", cls: "bg-success-bg text-success" }
+    : !ready
+      ? { label: "Aguarda apuramento", dot: "bg-soft", cls: "bg-surface-soft text-soft" }
+      : g.done
+        ? { label: "Terminado", dot: "bg-success", cls: "bg-success-bg text-success" }
+        : g.live
+          ? { label: "A jogar", dot: "bg-amber-500 animate-pulse", cls: "bg-amber-50 text-amber-700" }
+          : { label: "Por jogar", dot: "bg-brand-purple", cls: "bg-primary-light text-brand-purple" };
 
   const col = "grid grid-cols-[minmax(0,1fr)_repeat(3,2.75rem)] items-center gap-2";
   const setBox =
@@ -201,7 +204,11 @@ function GameCard({ g }: { g: Game }) {
           )}
         </div>
         {state?.error && <p className="mt-2 rounded-lg bg-danger-bg px-3 py-1.5 text-xs font-medium text-danger">{state.error}</p>}
-        {state?.ok && <p className="mt-2 text-xs font-medium text-success">✓ Resultado guardado.</p>}
+        {state?.warning ? (
+          <p className="mt-2 rounded-lg bg-warning-bg px-3 py-1.5 text-xs font-medium text-warning">{state.warning}</p>
+        ) : state?.ok ? (
+          <p className="mt-2 text-xs font-medium text-success">✓ Resultado guardado.</p>
+        ) : null}
       </form>
     </div>
   );
