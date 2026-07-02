@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUserId, signPlayerInvite } from "@/lib/auth";
 import { isMessagingConfigured, sendWesender } from "@/lib/wesender";
 import { notifyPlayers } from "@/lib/notify";
+import { occupiedCount } from "@/server/capacity";
 
 export type EntryState = { error?: string } | null;
 
@@ -94,17 +95,7 @@ export async function registerSelf(_prev: EntryState, formData: FormData): Promi
 
   // Lotação: as reservas (PENDING) por pagar contam para a vaga, exceto as expiradas
   // (se o torneio tiver prazo de reserva), que libertam a vaga para outros.
-  const holdH = comp.paymentHoldHours;
-  const cutoff = holdH ? new Date(Date.now() - holdH * 3600000) : null;
-  const count = await prisma.entry.count({
-    where: {
-      categoryId,
-      OR: [
-        { status: "CONFIRMED" },
-        { status: "PENDING", ...(cutoff ? { createdAt: { gte: cutoff } } : {}) },
-      ],
-    },
-  });
+  const count = await occupiedCount(categoryId, comp.paymentHoldHours ?? null);
   const status = category.maxEntries && count >= category.maxEntries ? "WAITLIST" : "PENDING";
 
   const price = category.price == null ? 0 : Number(category.price);
@@ -144,8 +135,14 @@ export async function registerSelf(_prev: EntryState, formData: FormData): Promi
     const entry = await prisma.entry.create({ data: { categoryId, teamId: team.id, status: status as never, unavailable: unavailable.length ? unavailable : undefined } });
     entryId = entry.id;
   } else {
-    const entry = await prisma.entry.create({ data: { categoryId, playerId: me.id, status: status as never, unavailable: unavailable.length ? unavailable : undefined } });
-    entryId = entry.id;
+    try {
+      const entry = await prisma.entry.create({ data: { categoryId, playerId: me.id, status: status as never, unavailable: unavailable.length ? unavailable : undefined } });
+      entryId = entry.id;
+    } catch (err) {
+      // Corrida de duplo-envio: a restrição única (categoria, jogador) trava a 2ª inscrição.
+      if ((err as { code?: string }).code === "P2002") return { error: "Já estás inscrito nesta categoria." };
+      throw err;
+    }
   }
 
   // Pagamento pendente da inscrição (se a categoria tiver preço).
@@ -204,6 +201,33 @@ function revalidateEntry(_e?: unknown) {
   revalidatePath("/admin", "layout");
 }
 
+// Quando abre uma vaga (desistência/remoção), promove a inscrição mais antiga da lista de espera
+// para PENDING e avisa os jogadores. Só promove se realmente houver espaço.
+async function promoteWaitlist(categoryId: number) {
+  const cat = await prisma.category.findUnique({
+    where: { id: categoryId },
+    select: { name: true, maxEntries: true, price: true, competition: { select: { clubId: true, name: true, paymentHoldHours: true } } },
+  });
+  if (!cat?.maxEntries) return; // sem limite não há lista de espera a gerir
+  const occupied = await occupiedCount(categoryId, cat.competition.paymentHoldHours ?? null);
+  if (occupied >= cat.maxEntries) return; // continua cheio
+  const next = await prisma.entry.findFirst({ where: { categoryId, status: "WAITLIST" }, orderBy: { createdAt: "asc" }, include: { team: true } });
+  if (!next) return;
+  await prisma.entry.update({ where: { id: next.id }, data: { status: "PENDING" } });
+
+  const ids: (number | null)[] = [];
+  if (next.team) ids.push(next.team.player1Id, next.team.player2Id);
+  if (next.playerId) ids.push(next.playerId);
+  const paid = cat.price != null && Number(cat.price) > 0;
+  await notifyPlayers({
+    clubId: cat.competition.clubId,
+    event: "registration",
+    playerIds: ids,
+    message: `Abriu uma vaga em ${cat.name} (${cat.competition.name}) e saíste da lista de espera.${paid ? " Paga a inscrição para garantires o lugar." : ""}`,
+    subject: "Saíste da lista de espera · PadelZone",
+  });
+}
+
 export async function setEntryStatus(formData: FormData) {
   const userId = await getSessionUserId();
   if (!userId) throw new Error("Sessão expirada.");
@@ -211,6 +235,7 @@ export async function setEntryStatus(formData: FormData) {
   const status = String(formData.get("status") ?? "PENDING");
   const e = await requireEntryManager(entryId, userId);
   await prisma.entry.update({ where: { id: entryId }, data: { status: status as never } });
+  if (status === "WITHDRAWN") await promoteWaitlist(e.categoryId); // desistência liberta vaga
   revalidateEntry(e);
 }
 
@@ -229,6 +254,11 @@ export async function removeEntry(formData: FormData) {
   if (!userId) throw new Error("Sessão expirada.");
   const entryId = Number(formData.get("entryId"));
   const e = await requireEntryManager(entryId, userId);
+  // Não apagar uma inscrição com pagamento pago (perderíamos o rasto do dinheiro). Retirar em vez de eliminar.
+  const paid = await prisma.payment.findFirst({ where: { entryId, status: "PAID" }, select: { id: true } });
+  if (paid) throw new Error("Esta inscrição tem um pagamento pago. Marca-a como retirada em vez de a eliminar.");
+  await prisma.payment.deleteMany({ where: { entryId } }); // remove reservas pendentes ligadas
   await prisma.entry.delete({ where: { id: entryId } });
+  await promoteWaitlist(e.categoryId); // a vaga libertada passa ao próximo da lista de espera
   revalidateEntry(e);
 }

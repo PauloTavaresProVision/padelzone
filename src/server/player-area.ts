@@ -144,6 +144,7 @@ export type MyPayment = {
   iban: string | null;
   ibanName: string | null;
   reservedUntil: string | null;
+  placeholder: boolean; // pagamento inicial ainda sem método escolhido (não mostrar "Referência")
 };
 
 // Pagamentos das inscrições do jogador (pagos e pendentes), com indicação se a categoria já está cheia.
@@ -187,6 +188,7 @@ export async function getMyPayments(userId: number): Promise<MyPayment[]> {
       iban: p.club.iban,
       ibanName: p.club.ibanName,
       reservedUntil,
+      placeholder: p.status !== "PAID" && p.method === "REFERENCE" && !p.reference && !p.externalId && !p.proofUrl,
     };
   });
 }

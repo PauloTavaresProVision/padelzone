@@ -214,6 +214,7 @@ export default async function PagamentosPage() {
               ) : (
                 payments.map((p) => {
                   const st = STATUS[p.status] ?? STATUS.PENDING;
+                  const placeholder = p.status === "PENDING" && p.method === "REFERENCE" && !p.reference && !p.externalId && !p.proofUrl;
                   return (
                     <tr key={p.id} className="transition hover:bg-surface-soft/40">
                       <td className="px-4 py-3">
@@ -222,10 +223,10 @@ export default async function PagamentosPage() {
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-muted">{p.competition?.name ?? "—"}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums text-zinc-900">{formatKz(Number(p.amount))}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-muted">{METHOD[p.method] ?? p.method}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-muted">{placeholder ? "Por definir" : METHOD[p.method] ?? p.method}</td>
                       <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-muted">
                         {p.method === "BANK_TRANSFER" && p.proofUrl ? (
-                          <a href={p.proofUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-sans text-brand-purple hover:underline"><FileText className="size-3.5" /> Ver recibo</a>
+                          <a href={`/api/recibos/${p.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-sans text-brand-purple hover:underline"><FileText className="size-3.5" /> Ver recibo</a>
                         ) : p.reference ? `${club.proxypayEntityId ?? "—"} · ${p.reference}` : "—"}
                       </td>
                       <td className="px-4 py-3">

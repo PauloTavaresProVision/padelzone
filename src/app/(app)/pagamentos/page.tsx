@@ -52,7 +52,7 @@ export default async function PagamentosPage({ searchParams }: { searchParams: P
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-zinc-900">{p.competition}</p>
-                    <p className="truncate text-xs text-muted">{p.category} · {METHOD[p.method] ?? p.method}</p>
+                    <p className="truncate text-xs text-muted">{p.category}{p.placeholder ? "" : ` · ${METHOD[p.method] ?? p.method}`}</p>
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-bold tabular-nums text-zinc-900">{formatKz(p.amount)}</p>

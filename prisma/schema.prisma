@@ -339,6 +339,11 @@ model Entry {
   groupLinks GroupEntry[]
   standings  Standing[]
   payments   Payment[]
+
+  // Impede inscrições duplicadas na mesma categoria (o Postgres trata NULL como distinto, por isso
+  // as inscrições de dupla (playerId nulo) e as individuais (teamId nulo) não colidem entre si).
+  @@unique([categoryId, playerId])
+  @@unique([categoryId, teamId])
 }
 
 model GroupEntry {

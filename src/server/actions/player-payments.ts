@@ -7,6 +7,7 @@ import { getSessionUserId } from "@/lib/auth";
 import { createReference, createCharge, getCharge, getExpressTransaction, mockChargeTransaction } from "@/server/proxypay";
 import { confirmPaymentPaid } from "@/server/payments-core";
 import { saveFile } from "@/server/upload";
+import { occupiedCount } from "@/server/capacity";
 
 async function loadOwnedEntry(entryId: number, userId: number) {
   const player = await prisma.player.findUnique({ where: { userId } });
@@ -30,9 +31,10 @@ async function assertNotFull(entry: Awaited<ReturnType<typeof loadOwnedEntry>>) 
     if (Date.now() > expiry) throw new Error("A reserva expirou. Volta a inscrever-te para pagar.");
   }
   const max = entry.category.maxEntries;
-  if (max == null) return;
-  const confirmed = await prisma.entry.count({ where: { categoryId: entry.categoryId, status: "CONFIRMED" } });
-  if (entry.status !== "CONFIRMED" && confirmed >= max) {
+  if (max == null || entry.status === "CONFIRMED") return;
+  // Mesma contagem do registo (confirmados + reservas válidas), excluindo a própria reserva.
+  const occupied = await occupiedCount(entry.categoryId, comp.paymentHoldHours ?? null, entry.id);
+  if (occupied >= max) {
     throw new Error("Esta categoria já está cheia. Já não é possível pagar esta inscrição.");
   }
 }
@@ -50,8 +52,17 @@ function demoReference() {
 }
 
 async function upsertPayment(entry: Awaited<ReturnType<typeof loadOwnedEntry>>, price: number, data: { method: "REFERENCE" | "MULTICAIXA_EXPRESS" | "BANK_TRANSFER"; status: "PENDING" | "PAID" | "FAILED"; reference?: string | null; externalId?: string | null; proofUrl?: string | null }) {
-  const existing = entry.payments[0];
-  if (existing) return prisma.payment.update({ where: { id: existing.id }, data });
+  // Nunca mexer numa linha já paga (evita "apagar" um pagamento real ao trocar de método).
+  if (entry.payments.some((p) => p.status === "PAID")) {
+    throw new Error("Esta inscrição já está paga.");
+  }
+  const pending = entry.payments.filter((p) => p.status !== "PAID" && p.status !== "REFUNDED");
+  // Reutiliza uma linha do MESMO método, ou um placeholder sem compromisso externo (sem
+  // referência/cobrança/comprovativo). Se o jogador trocar para outro método quando já há uma
+  // referência/cobrança emitida, cria uma linha NOVA e deixa a anterior pendente — assim, se essa
+  // referência acabar por ser paga, o webhook ainda a encontra (em vez de perdermos o rasto).
+  const target = pending.find((p) => p.method === data.method) ?? pending.find((p) => !p.externalId && !p.reference && !p.proofUrl);
+  if (target) return prisma.payment.update({ where: { id: target.id }, data });
   return prisma.payment.create({
     data: { clubId: entry.category.competition.clubId, competitionId: entry.category.competitionId, entryId: entry.id, amount: price, ...data },
   });
@@ -67,12 +78,17 @@ export async function playerPayReference(entryId: number) {
   const club = entry.category.competition.club;
 
   let reference: string;
+  let externalId: string | null = null;
   if (club.referenceEnabled && club.proxypayApiKey) {
     reference = await createReference({ apiKey: club.proxypayApiKey, sandbox: club.proxypaySandbox }, { amount: price, customFields: { entry_id: String(entry.id) } });
+    externalId = reference; // referência real da ProxyPay (é por aqui que o webhook confirma)
+  } else if (process.env.NODE_ENV === "production") {
+    // Em produção não inventamos uma referência falsa (nunca seria confirmada — só confundia o jogador).
+    throw new Error("O pagamento por referência ainda não está disponível. Escolhe outro método ou fala com o clube.");
   } else {
-    reference = demoReference(); // modo de demonstração
+    reference = demoReference(); // demonstração (dev); externalId fica nulo para o webhook nunca casar
   }
-  await upsertPayment(entry, price, { method: "REFERENCE", status: "PENDING", reference, externalId: reference });
+  await upsertPayment(entry, price, { method: "REFERENCE", status: "PENDING", reference, externalId });
   revalidatePath("/pagamentos");
   revalidatePath("/inscricoes");
 }
@@ -132,11 +148,14 @@ export async function playerPayExpress(entryId: number): Promise<ExpressCharge> 
 
 // SANDBOX apenas: simula o pagamento da cobrança (para testar sem ler o QR num telemóvel).
 export async function simulateExpressPayment(entryId: number, accept: boolean): Promise<"paid" | "failed" | "pending"> {
+  // Ferramenta de teste (sandbox). Em produção fica DESATIVADA, exceto se explicitamente permitida
+  // por variável de ambiente — senão um jogador poderia "confirmar" a própria inscrição de graça.
+  if (process.env.NODE_ENV === "production" && process.env.PZ_ALLOW_EXPRESS_SIMULATION !== "1") return "pending";
   const userId = await getSessionUserId();
   if (!userId) return "pending";
   const entry = await loadOwnedEntry(entryId, userId);
   const club = entry.category.competition.club;
-  const payment = entry.payments[0];
+  const payment = entry.payments.find((p) => p.method === "MULTICAIXA_EXPRESS" && p.externalId && p.status !== "PAID");
   if (!club.proxypaySandbox || !club.mcxExpressToken || !payment?.externalId) return "pending";
   try {
     await mockChargeTransaction({ token: club.mcxExpressToken, sandbox: true }, payment.externalId, accept ? "accepted" : "rejected");
@@ -157,7 +176,7 @@ export async function checkExpressCharge(entryId: number): Promise<"paid" | "fai
     return "pending";
   }
   const club = entry.category.competition.club;
-  const payment = entry.payments[0];
+  const payment = entry.payments.find((p) => p.method === "MULTICAIXA_EXPRESS" && p.externalId && p.status !== "PAID");
   if (!payment || !payment.externalId || !club.mcxExpressToken) return "pending";
 
   const cfg = { token: club.mcxExpressToken, sandbox: club.proxypaySandbox };
