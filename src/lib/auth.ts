@@ -4,16 +4,25 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 
 const COOKIE = "pz_session";
-// Em produção o segredo TEM de vir do ambiente e ser forte — senão qualquer pessoa que conheça
-// o valor por omissão podia forjar cookies de sessão (e tokens de reposição/convite). Falha já
-// no arranque em vez de correr com uma chave insegura conhecida.
-if (process.env.NODE_ENV === "production" && (!process.env.AUTH_SECRET || process.env.AUTH_SECRET.length < 16)) {
-  throw new Error("AUTH_SECRET em falta ou demasiado fraca em produção (define uma chave com pelo menos 16 caracteres).");
+const FALLBACK_SECRET = "dev-insecure-secret-change-me";
+
+// O segredo é validado de forma PREGUIÇOSA (na 1.ª utilização, em runtime), não no topo do módulo:
+// assim o `next build` — que avalia os módulos sem o ambiente de runtime (o .env só entra no
+// container em execução) — não rebenta. Em produção continua a recusar assinar com o valor por
+// omissão inseguro: se o AUTH_SECRET faltar ou for fraco, falha na 1.ª operação de sessão.
+let cachedSecret: string | null = null;
+function secret(): string {
+  if (cachedSecret) return cachedSecret;
+  const s = process.env.AUTH_SECRET;
+  if (process.env.NODE_ENV === "production" && (!s || s.length < 16)) {
+    throw new Error("AUTH_SECRET em falta ou demasiado fraca em produção (define uma chave com pelo menos 16 caracteres).");
+  }
+  cachedSecret = s || FALLBACK_SECRET;
+  return cachedSecret;
 }
-const SECRET = process.env.AUTH_SECRET || "dev-insecure-secret-change-me";
 
 function hmac(value: string) {
-  return crypto.createHmac("sha256", SECRET).update(value).digest("base64url");
+  return crypto.createHmac("sha256", secret()).update(value).digest("base64url");
 }
 
 function safeEqual(a: string, b: string) {
